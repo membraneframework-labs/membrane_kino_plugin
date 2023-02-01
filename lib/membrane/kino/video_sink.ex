@@ -11,7 +11,7 @@ defmodule Membrane.Kino.Video.Sink do
   alias Membrane.RawVideo
   alias Kino.JS.Live, as: KinoPlayer
 
-  def_options kino_player: [
+  def_options kino: [
                 spec: KinoPlayer.t(),
                 description: "Kino element handle. It should be initialized before the pipeline."
               ]
@@ -19,13 +19,13 @@ defmodule Membrane.Kino.Video.Sink do
   # The measured latency needed to show a frame on a screen.
   @latency 20 |> Time.milliseconds()
 
-  def_input_pad :input, accepted_format: RawVideo, demand_unit: :buffers
+  def_input_pad :input, accepted_format: %RawVideo{pixel_format: :RGBA}, demand_unit: :buffers
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
     IO.inspect("Kino.Sink handle_init")
 
-    state = %{kino_player: options.kino_player, timer_started?: false}
+    state = %{kino: options.kino, timer_started?: false}
     {[latency: @latency], state}
   end
 
@@ -34,11 +34,11 @@ defmodule Membrane.Kino.Video.Sink do
     IO.inspect("Kino.Sink handle_stream_format/4")
 
     %{input: input} = ctx.pads
-    %{kino_player: kino_player} = state
+    %{kino: kino} = state
 
     if !input.stream_format || stream_format == input.stream_format do
       IO.inspect("Kino.Sink handle_stream_format/4 bin")
-      :ok = KinoPlayer.call(kino_player, {:create, {stream_format.width, stream_format.height}})
+      :ok = KinoPlayer.call(kino, {:create, {stream_format.width, stream_format.height}})
       {[], state}
     else
       raise "Stream format have changed while playing. This is not supported."
@@ -61,7 +61,7 @@ defmodule Membrane.Kino.Video.Sink do
     IO.inspect("Kino.Sink handle_write input")
 
     payload = Membrane.Payload.to_binary(payload)
-    :ok = KinoPlayer.call(state.kino_player, {:buffor, payload})
+    :ok = KinoPlayer.call(state.kino, {:buffer, payload})
     {[], state}
   end
 
@@ -70,5 +70,16 @@ defmodule Membrane.Kino.Video.Sink do
     IO.inspect("Kino.Sink handle_tick")
 
     {[demand: :input], state}
+  end
+
+  @impl true
+  def handle_end_of_stream(:input, ctx, state) do
+    IO.inspect("Kino.Sink handle_end_of_stream")
+
+    if state.timer_started? do
+      {[stop_timer: :demand_timer], %{state | timer_started?: false}}
+    else
+      {[], state}
+    end
   end
 end
