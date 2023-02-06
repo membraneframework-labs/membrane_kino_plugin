@@ -55,7 +55,7 @@ pipeline = RemoteControlled.Pipeline.start!()
 # })
 structure =
   child(:file_input, %File.Source{location: input_filepath})
-  |> child(:parser, %Parser{framerate: {60, 1}})
+  |> child(:parser, %Parser{framerate: {10, 1}})
   # |> child(:decoder, Decoder)
   # |> child(:to_rgb, %PixelFormatConverter{format: :RGBA})
   |> child(:video_player, %Kino.Video.Sink{kino: kino})

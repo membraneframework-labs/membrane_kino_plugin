@@ -13,8 +13,8 @@
   width: 50%;
 }
 
-img#video-player {
+#video-player {
   max-width: 100%;
-  -webkit-transform: scaleY(-1);
-  transform: scaleY(-1);
+  border: 1px solid #333;
+  margin: 0 auto;
 }

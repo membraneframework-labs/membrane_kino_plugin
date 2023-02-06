@@ -4,8 +4,9 @@ defmodule Kino.Video.Binary do
 
   @type t() :: Kino.JS.Live.t()
 
-  def new() do
-    Kino.JS.Live.new(__MODULE__, nil)
+  def new(opts \\ []) do
+    opts = Keyword.validate!(opts)
+    Kino.JS.Live.new(__MODULE__, {})
   end
 
   @impl true
@@ -26,16 +27,14 @@ defmodule Kino.Video.Binary do
       clients: ctx.assigns.clients
     }
 
-    broadcast_event(ctx, "client_join", %{client_id: client_id})
-
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
   end
 
   @impl true
-  def handle_cast({:create, {width, height}}, ctx) do
+  def handle_cast({:create, framerate}, ctx) do
     IO.inspect("Kino.Video.Binary handle_cast create")
 
-    payload = %{width: width, height: height}
+    payload = %{framerate: framerate}
     broadcast_event(ctx, "create", payload)
     {:noreply, ctx}
   end
@@ -44,7 +43,7 @@ defmodule Kino.Video.Binary do
   def handle_cast({:buffer, buffer}, ctx) do
     IO.inspect("Kino.Video.Binary handle_cast buffer")
 
-    payload = {:binary, info, buffer}
+    payload = {:binary, %{}, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end
