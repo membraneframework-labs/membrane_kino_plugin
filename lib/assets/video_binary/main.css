@@ -1,0 +1,20 @@
+/* .clients {
+  display: flex;
+  flex-direction: column;
+} */
+
+.client {
+  display: flex;
+  justify-content: center;
+}
+
+.frame-container {
+  display: flex;
+  width: 50%;
+}
+
+img#video-player {
+  max-width: 100%;
+  -webkit-transform: scaleY(-1);
+  transform: scaleY(-1);
+}

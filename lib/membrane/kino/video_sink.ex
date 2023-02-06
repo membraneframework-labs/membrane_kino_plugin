@@ -21,7 +21,7 @@ defmodule Membrane.Kino.Video.Sink do
   require Membrane.Logger
 
   alias Membrane.{Buffer, Time}
-  alias Membrane.RawVideo
+  alias Membrane.{RawVideo, H264}
   alias Kino.JS.Live, as: KinoPlayer
 
   def_options kino: [
@@ -33,13 +33,16 @@ defmodule Membrane.Kino.Video.Sink do
   # The measured latency needed to show a frame on a screen.
   @latency 20 |> Time.milliseconds()
 
-  def_input_pad :input, accepted_format: %RawVideo{pixel_format: :RGBA}, demand_unit: :buffers
+  def_input_pad :input,
+    # accepted_format: %RawVideo{pixel_format: :RGBA} | H264,
+    accepted_format: _any,
+    demand_unit: :buffers
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
     IO.inspect("Kino.Sink handle_init")
 
-    state = %{kino: options.kino, timer_started?: false}
+    state = %{kino: options.kino, timer_started?: false, index: 0}
     {[latency: @latency], state}
   end
 
@@ -52,7 +55,7 @@ defmodule Membrane.Kino.Video.Sink do
 
     if !input.stream_format or stream_format == input.stream_format do
       IO.inspect("Kino.Sink handle_stream_format/4 bin")
-      KinoPlayer.cast(kino, {:create, {stream_format.width, stream_format.height}})
+      # KinoPlayer.cast(kino, {:create, {stream_format.width, stream_format.height}})
       {[], state}
     else
       raise "Stream format has changed while playing. This is not supported."
@@ -73,10 +76,11 @@ defmodule Membrane.Kino.Video.Sink do
   @impl true
   def handle_write(:input, %Buffer{payload: payload}, _ctx, state) do
     IO.inspect("Kino.Sink handle_write input")
+    IO.inspect(state.index, label: "index")
 
     payload = Membrane.Payload.to_binary(payload)
     KinoPlayer.cast(state.kino, {:buffer, payload})
-    {[], state}
+    {[], %{state | index: state.index + 1}}
   end
 
   @impl true
@@ -91,7 +95,7 @@ defmodule Membrane.Kino.Video.Sink do
     IO.inspect("Kino.Sink handle_end_of_stream")
 
     if state.timer_started? do
-      {[stop_timer: :demand_timer], %{state | timer_started?: false}}
+      {[stop_timer: :demand_timer], %{state | timer_started?: false, index: 0}}
     else
       {[], state}
     end

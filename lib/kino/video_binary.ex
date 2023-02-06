@@ -9,16 +9,31 @@ defmodule Kino.Video.Binary do
   end
 
   @impl true
-  def handle_connect(ctx) do
-    IO.inspect("handle_connect")
+  def init(_args, ctx) do
+    IO.inspect("Kino.Video.Binary init")
 
-    payload = {:binary, %{message: "hello"}, <<1, 2>>}
-    {:ok, payload, ctx}
+    {:ok, assign(ctx, clients: [])}
+  end
+
+  @impl true
+  def handle_connect(ctx) do
+    IO.inspect("Kino.Video.Binary handle_connect")
+
+    client_id = random_id()
+
+    info = %{
+      client_id: client_id,
+      clients: ctx.assigns.clients
+    }
+
+    broadcast_event(ctx, "client_join", %{client_id: client_id})
+
+    {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
   end
 
   @impl true
   def handle_cast({:create, {width, height}}, ctx) do
-    IO.inspect("handle_call create")
+    IO.inspect("Kino.Video.Binary handle_cast create")
 
     payload = %{width: width, height: height}
     broadcast_event(ctx, "create", payload)
@@ -27,9 +42,9 @@ defmodule Kino.Video.Binary do
 
   @impl true
   def handle_cast({:buffer, buffer}, ctx) do
-    IO.inspect("handle_call buffer")
+    IO.inspect("Kino.Video.Binary handle_cast buffer")
 
-    payload = {:binary, %{}, buffer}
+    payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end
@@ -40,4 +55,8 @@ defmodule Kino.Video.Binary do
   #   broadcast_event(ctx, "pong", reply_payload)
   #   {:noreply, ctx}
   # end
+
+  defp random_id() do
+    :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower)
+  end
 end
