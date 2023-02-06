@@ -55,7 +55,7 @@ defmodule Membrane.Kino.Video.Sink do
 
     if !input.stream_format or stream_format == input.stream_format do
       IO.inspect("Kino.Sink handle_stream_format/4 bin")
-      # KinoPlayer.cast(kino, {:create, {stream_format.width, stream_format.height}})
+      KinoPlayer.cast(kino, {:create, {0, 0}})
       {[], state}
     else
       raise "Stream format has changed while playing. This is not supported."
