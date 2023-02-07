@@ -53,8 +53,6 @@ defmodule Kino.Video.Binary do
 
   @impl true
   def handle_cast({:create, framerate}, ctx) do
-    IO.inspect("Kino.Video.Binary handle_cast create")
-
     payload = %{framerate: framerate}
     broadcast_event(ctx, "create", payload)
     {:noreply, ctx}
@@ -62,8 +60,6 @@ defmodule Kino.Video.Binary do
 
   @impl true
   def handle_cast({:buffer, buffer, info}, ctx) do
-    IO.inspect("Kino.Video.Binary handle_cast buffer")
-
     payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}

@@ -57,21 +57,16 @@ defmodule Membrane.Kino.Video.Sink do
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
-    IO.inspect("Kino.Sink handle_init")
-
     state = %{kino: options.kino, timer_started?: false, index: 0}
     {[latency: @latency], state}
   end
 
   @impl true
   def handle_stream_format(:input, stream_format, ctx, state) do
-    IO.inspect("Kino.Sink handle_stream_format/4")
-
     %{input: input} = ctx.pads
     %{kino: kino} = state
 
     if !input.stream_format or stream_format == input.stream_format do
-      IO.inspect("Kino.Sink handle_stream_format/4 bin")
       {num, den} = stream_format.framerate
       framerate = div(num, den)
       KinoPlayer.cast(kino, {:create, framerate})
@@ -83,8 +78,6 @@ defmodule Membrane.Kino.Video.Sink do
 
   @impl true
   def handle_start_of_stream(:input, ctx, state) do
-    IO.inspect("Kino.Sink handle_start_of_stream")
-
     use Ratio
     {nom, denom} = ctx.pads.input.stream_format.framerate
     timer = {:demand_timer, Time.seconds(denom) <|> nom}
