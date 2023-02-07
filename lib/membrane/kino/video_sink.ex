@@ -38,7 +38,7 @@ defmodule Membrane.Kino.Video.Sink do
 
     if !input.stream_format || stream_format == input.stream_format do
       IO.inspect("Kino.Sink handle_stream_format/4 bin")
-      :ok = KinoPlayer.call(kino, {:create, {stream_format.width, stream_format.height}})
+      KinoPlayer.cast(kino, {:create, {stream_format.width, stream_format.height}})
       {[], state}
     else
       raise "Stream format have changed while playing. This is not supported."
@@ -61,7 +61,7 @@ defmodule Membrane.Kino.Video.Sink do
     IO.inspect("Kino.Sink handle_write input")
 
     payload = Membrane.Payload.to_binary(payload)
-    :ok = KinoPlayer.call(state.kino, {:buffer, payload})
+    KinoPlayer.cast(state.kino, {:buffer, payload})
     {[], state}
   end
 
@@ -73,7 +73,7 @@ defmodule Membrane.Kino.Video.Sink do
   end
 
   @impl true
-  def handle_end_of_stream(:input, ctx, state) do
+  def handle_end_of_stream(:input, _ctx, state) do
     IO.inspect("Kino.Sink handle_end_of_stream")
 
     if state.timer_started? do

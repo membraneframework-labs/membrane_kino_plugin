@@ -17,21 +17,21 @@ defmodule Kino.Video.Binary do
   end
 
   @impl true
-  def handle_call({:create, {width, height}}, _from, ctx) do
+  def handle_cast({:create, {width, height}}, ctx) do
     IO.inspect("handle_call create")
 
     payload = %{width: width, height: height}
     broadcast_event(ctx, "create", payload)
-    {:reply, :ok, ctx}
+    {:noreply, ctx}
   end
 
   @impl true
-  def handle_call({:buffer, buffer}, _from, ctx) do
+  def handle_cast({:buffer, buffer}, ctx) do
     IO.inspect("handle_call buffer")
 
     payload = {:binary, %{}, buffer}
     broadcast_event(ctx, "buffer", payload)
-    {:reply, :ok, ctx}
+    {:noreply, ctx}
   end
 
   # @impl true
