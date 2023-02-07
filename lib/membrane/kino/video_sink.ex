@@ -11,7 +11,26 @@ defmodule Membrane.Kino.Video.Sink do
   kino = Kino.Video.Binary.new()
 
   # lower cell
-  # TODO add example in the next PR
+  import Membrane.ChildrenSpec
+
+  alias Membrane.{
+    File,
+    RawVideo,
+    Kino
+  }
+  alias Membrane.H264.FFmpeg.Parser
+  alias Membrane.RemoteControlled, as: RC
+
+  input_filepath = "path/to/file.h264"
+
+  structure =
+    child(:file_input, %File.Source{location: input_filepath})
+    |> child(:parser, %Parser{framerate: {60, 1}})
+    |> child(:video_player, %Kino.Video.Sink{kino: kino})
+
+  pipeline = RC.Pipeline.start!()
+  RC.Pipeline.exec_actions(pipeline, spec: structure)
+  RC.Pipeline.exec_actions(pipeline, playback: :playing)
   ```
 
   """
@@ -76,7 +95,7 @@ defmodule Membrane.Kino.Video.Sink do
   @impl true
   def handle_write(:input, %Buffer{payload: payload}, _ctx, state) do
     payload = Membrane.Payload.to_binary(payload)
-    KinoPlayer.cast(state.kino, {:buffer, payload})
+    KinoPlayer.cast(state.kino, {:buffer, payload, %{}})
     {[], %{state | index: state.index + 1}}
   end
 

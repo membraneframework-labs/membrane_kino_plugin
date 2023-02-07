@@ -28,22 +28,17 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.H264.FFmpeg.{
-  Decoder,
-  Parser
-}
-
+alias Membrane.H264.FFmpeg.Parser
 alias Membrane.RemoteControlled, as: RC
 
 input_filepath = "./res/input.h264"
-
-pipeline = RC.Pipeline.start!()
 
 structure =
   child(:file_input, %File.Source{location: input_filepath})
   |> child(:parser, %Parser{framerate: {60, 1}})
   |> child(:video_player, %Kino.Video.Sink{kino: kino})
 
+pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure)
 RC.Pipeline.exec_actions(pipeline, playback: :playing)
 ```
