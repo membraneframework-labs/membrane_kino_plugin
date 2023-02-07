@@ -1,6 +1,19 @@
 defmodule Membrane.Kino.Video.Sink do
   @moduledoc """
-  This module provides a video player sink compatible with the Livebook.
+  This module provides a video player sink compatible with the Livebook environment.
+
+  Livebook handles multimedia and specific media by using the Kino library and its extensions.
+  This module integrate special `Kino.Video.Binary` element into the Membrane pipeline and shows video in livebook's cells.
+
+  ## Example
+  ``` elixir
+  # upper cell
+  kino = Kino.Video.Binary.new()
+
+  # lower cell
+  # TODO add example in the next PR
+  ```
+
   """
 
   use Membrane.Sink
@@ -13,7 +26,8 @@ defmodule Membrane.Kino.Video.Sink do
 
   def_options kino: [
                 spec: KinoPlayer.t(),
-                description: "Kino element handle. It should be initialized before the pipeline."
+                description:
+                  "Kino element handle. It should be initialized before the pipeline is started."
               ]
 
   # The measured latency needed to show a frame on a screen.
@@ -36,12 +50,12 @@ defmodule Membrane.Kino.Video.Sink do
     %{input: input} = ctx.pads
     %{kino: kino} = state
 
-    if !input.stream_format || stream_format == input.stream_format do
+    if !input.stream_format or stream_format == input.stream_format do
       IO.inspect("Kino.Sink handle_stream_format/4 bin")
       KinoPlayer.cast(kino, {:create, {stream_format.width, stream_format.height}})
       {[], state}
     else
-      raise "Stream format have changed while playing. This is not supported."
+      raise "Stream format has changed while playing. This is not supported."
     end
   end
 
