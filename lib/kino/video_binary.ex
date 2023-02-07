@@ -10,15 +10,11 @@ defmodule Kino.Video.Binary do
 
   @impl true
   def init(_args, ctx) do
-    IO.inspect("Kino.Video.Binary init")
-
     {:ok, assign(ctx, clients: [])}
   end
 
   @impl true
   def handle_connect(ctx) do
-    IO.inspect("Kino.Video.Binary handle_connect")
-
     client_id = random_id()
 
     info = %{
@@ -39,10 +35,10 @@ defmodule Kino.Video.Binary do
   end
 
   @impl true
-  def handle_cast({:buffer, buffer}, ctx) do
+  def handle_cast({:buffer, buffer, info}, ctx) do
     IO.inspect("Kino.Video.Binary handle_cast buffer")
 
-    payload = {:binary, %{}, buffer}
+    payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end

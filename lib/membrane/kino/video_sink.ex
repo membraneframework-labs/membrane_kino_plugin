@@ -20,8 +20,7 @@ defmodule Membrane.Kino.Video.Sink do
 
   require Membrane.Logger
 
-  alias Membrane.{Buffer, Time}
-  alias Membrane.{RawVideo, H264}
+  alias Membrane.{Buffer, H264, Time}
   alias Kino.JS.Live, as: KinoPlayer
 
   def_options kino: [
@@ -34,8 +33,7 @@ defmodule Membrane.Kino.Video.Sink do
   @latency 20 |> Time.milliseconds()
 
   def_input_pad :input,
-    # accepted_format: %RawVideo{pixel_format: :RGBA} | H264,
-    accepted_format: _any,
+    accepted_format: H264,
     demand_unit: :buffers
 
   @impl true
@@ -77,9 +75,6 @@ defmodule Membrane.Kino.Video.Sink do
 
   @impl true
   def handle_write(:input, %Buffer{payload: payload}, _ctx, state) do
-    IO.inspect("Kino.Sink handle_write input")
-    IO.inspect(state.index, label: "index")
-
     payload = Membrane.Payload.to_binary(payload)
     KinoPlayer.cast(state.kino, {:buffer, payload})
     {[], %{state | index: state.index + 1}}
@@ -87,15 +82,11 @@ defmodule Membrane.Kino.Video.Sink do
 
   @impl true
   def handle_tick(:demand_timer, _ctx, state) do
-    IO.inspect("Kino.Sink handle_tick")
-
     {[demand: :input], state}
   end
 
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
-    IO.inspect("Kino.Sink handle_end_of_stream")
-
     if state.timer_started? do
       {[stop_timer: :demand_timer], %{state | timer_started?: false, index: 0}}
     else
