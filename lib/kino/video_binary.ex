@@ -4,8 +4,7 @@ defmodule Kino.Video.Binary do
 
   @type t() :: Kino.JS.Live.t()
 
-  def new(opts \\ []) do
-    opts = Keyword.validate!(opts)
+  def new(_opts \\ []) do
     Kino.JS.Live.new(__MODULE__, {})
   end
 
@@ -47,13 +46,6 @@ defmodule Kino.Video.Binary do
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end
-
-  # @impl true
-  # def handle_event("ping", {:binary, _info, binary}, ctx) do
-  #   reply_payload = {:binary, %{message: "pong"}, <<1, 2, binary::binary>>}
-  #   broadcast_event(ctx, "pong", reply_payload)
-  #   {:noreply, ctx}
-  # end
 
   defp random_id() do
     :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower)
