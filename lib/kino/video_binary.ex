@@ -32,13 +32,14 @@ defmodule Kino.Video.Binary do
   Creates a new Kino.Video.Binary component. Returns a handle to the element.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  def new(_opts \\ []) do
-    Kino.JS.Live.new(__MODULE__, {})
+  @spec new(:video | :audio | :both, []) :: t()
+  def new(type \\ :video, _opts \\ []) do
+    Kino.JS.Live.new(__MODULE__, {type})
   end
 
   @impl true
-  def init(_args, ctx) do
-    {:ok, assign(ctx, clients: [])}
+  def init({type}, ctx) do
+    {:ok, assign(ctx, clients: [], type: type)}
   end
 
   @impl true
@@ -46,8 +47,7 @@ defmodule Kino.Video.Binary do
     client_id = random_id()
 
     info = %{
-      client_id: client_id,
-      clients: ctx.assigns.clients
+      type: ctx.assigns.type
     }
 
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
@@ -61,9 +61,26 @@ defmodule Kino.Video.Binary do
   end
 
   @impl true
-  def handle_cast({:buffer, buffer, info}, ctx) do
+  def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
+      when ctx.assigns.type == :both do
+    info = Map.put(info, :video_size, byte_size(video))
+    payload = {:binary, info, video <> audio}
+    broadcast_event(ctx, "buffer", payload)
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
     payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_cast({:buffer, buffer, info}, ctx) do
+    IO.inspect({:buffer, buffer, info}, label: "Kino.Video.Binary buffer")
+    IO.inspect(ctx, label: "Kino.Video.Binary ctx")
+
     {:noreply, ctx}
   end
 

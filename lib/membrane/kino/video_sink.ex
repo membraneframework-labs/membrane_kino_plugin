@@ -39,8 +39,8 @@ defmodule Membrane.Kino.Video.Sink do
 
   require Membrane.Logger
 
-  alias Membrane.{Buffer, H264, Time}
   alias Kino.JS.Live, as: KinoPlayer
+  alias Membrane.{Buffer, H264, Time}
 
   def_options kino: [
                 spec: KinoPlayer.t(),
