@@ -88,7 +88,7 @@ defmodule Membrane.Kino.Video.Sink do
   @impl true
   def handle_write(:input, %Buffer{payload: payload}, _ctx, state) do
     payload = Membrane.Payload.to_binary(payload)
-    KinoPlayer.cast(state.kino, {:buffer, payload, %{}})
+    KinoPlayer.cast(state.kino, {:buffer, payload, %{index: state.index}})
     {[], %{state | index: state.index + 1}}
   end
 

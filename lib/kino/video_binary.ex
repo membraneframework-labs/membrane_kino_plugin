@@ -47,7 +47,8 @@ defmodule Kino.Video.Binary do
     client_id = random_id()
 
     info = %{
-      type: ctx.assigns.type
+      type: ctx.assigns.type,
+      client_id: client_id
     }
 
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
@@ -73,14 +74,6 @@ defmodule Kino.Video.Binary do
   def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
     payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
-    {:noreply, ctx}
-  end
-
-  @impl true
-  def handle_cast({:buffer, buffer, info}, ctx) do
-    IO.inspect({:buffer, buffer, info}, label: "Kino.Video.Binary buffer")
-    IO.inspect(ctx, label: "Kino.Video.Binary ctx")
-
     {:noreply, ctx}
   end
 
