@@ -1,11 +1,11 @@
-defmodule Kino.Video.Binary do
+defmodule Membrane.Kino.Player do
   @moduledoc """
   Kino component capable of playing a video from the h264 binary frames.
 
   Element provides asynchronous API for sending frames to the player:
   ```elixir
   # upper cell
-  kino = Kino.Video.Binary.new()
+  kino = Membrane.Kino.Player.new(:video)
 
   #lower cell
   alias = Kino.JS.Live, as: KinoPlayer
@@ -23,19 +23,21 @@ defmodule Kino.Video.Binary do
   ```
   """
 
-  use Kino.JS, assets_path: "lib/assets/video_binary"
+  use Kino.JS, assets_path: "lib/assets/player"
   use Kino.JS.Live
 
   @type t() :: Kino.JS.Live.t()
 
   @doc """
-  Creates a new Kino.Video.Binary component. Returns a handle to the element.
+  Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
   """
   @spec new(:video | :audio | :both, []) :: t()
   def new(type \\ :video, _opts \\ []) do
     Kino.JS.Live.new(__MODULE__, {type})
   end
+
+  # def get_type()
 
   @impl true
   def init({type}, ctx) do
