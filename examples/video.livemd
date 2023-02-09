@@ -1,7 +1,8 @@
-# Video
+# Playing H264 video from a file
 
 ```elixir
 File.cd(__DIR__)
+Logger.configure(level: :error)
 
 Mix.install([
   {:kino, "~> 0.8.1"},
@@ -13,11 +14,15 @@ Mix.install([
 ])
 ```
 
-## Section
+## Kino Player
 
 ```elixir
 kino = Kino.Video.Binary.new()
 ```
+
+## Pipeline definition
+
+Input video is loaded from the file and directly played using `Kino.Video` sink/player.
 
 ```elixir
 import Membrane.ChildrenSpec
@@ -38,6 +43,12 @@ structure =
   |> child(:parser, %Parser{framerate: {60, 1}})
   |> child(:video_player, %Kino.Video.Sink{kino: kino})
 
+:ok
+```
+
+## Playing pipeline
+
+```elixir
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure)
 RC.Pipeline.exec_actions(pipeline, playback: :playing)
