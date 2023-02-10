@@ -7,7 +7,7 @@ defmodule Kino.Video.Binary do
   # upper cell
   kino = Kino.Video.Binary.new()
 
-  #lover cell
+  #lower cell
   alias = Kino.JS.Live, as: KinoPlayer
 
   framerate = 30

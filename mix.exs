@@ -39,7 +39,7 @@ defmodule Membrane.Kino.Mixfile do
     [
       {:membrane_core, "~> 0.11.2"},
       {:kino, "~> 0.8.1"},
-      {:membrane_h264_format, "~> 0.5"},
+      {:membrane_h264_format, "~> 0.5.0"},
 
       # Testing
       {:membrane_file_plugin, "~> 0.13.0", only: :test},
