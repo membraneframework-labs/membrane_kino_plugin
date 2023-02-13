@@ -38,6 +38,7 @@ input_filepath = "./res/input.aac"
 structure =
   child(:file_input, %File.Source{location: input_filepath})
   |> child(:parser, Parser)
+  |> via_in(:audio)
   |> child(:video_player, %Kino.Player.Sink{kino: kino})
 
 :ok
@@ -47,6 +48,5 @@ structure =
 
 ```elixir
 pipeline = RC.Pipeline.start!()
-RC.Pipeline.exec_actions(pipeline, spec: structure)
-RC.Pipeline.exec_actions(pipeline, playback: :playing)
+RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
 ```

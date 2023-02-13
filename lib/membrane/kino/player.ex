@@ -28,13 +28,20 @@ defmodule Membrane.Kino.Player do
 
   @type t() :: Kino.JS.Live.t()
 
+  @type player_type_t :: :video | :audio | :both
+
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  @spec new(:video | :audio | :both, []) :: t()
+  @spec new(player_type_t, []) :: t()
   def new(type \\ :video, _opts \\ []) do
     Kino.JS.Live.new(__MODULE__, type)
+  end
+
+  @impl true
+  def handle_call(:get_type, _from, ctx) do
+    {:reply, ctx.assigns.type, ctx}
   end
 
   @impl true
