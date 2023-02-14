@@ -1,0 +1,54 @@
+# Playing video and audio from files
+
+```elixir
+File.cd(__DIR__)
+Logger.configure(level: :error)
+
+Mix.install([
+  {:membrane_core, "~> 0.11.2"},
+  {:membrane_kino_plugin, path: ".."},
+  {:membrane_file_plugin, "~> 0.13.0"},
+  {:membrane_mp4_plugin, "~> 0.19.0"},
+  {:membrane_h264_ffmpeg_plugin, "~> 0.25.2"},
+  {:membrane_aac_plugin, "~> 0.13.0"}
+])
+```
+
+## Section
+
+```elixir
+kino = Membrane.Kino.Player.new(:both)
+```
+
+```elixir
+import Membrane.ChildrenSpec
+
+alias Membrane.{
+  File,
+  RawVideo,
+  Kino
+}
+
+alias Membrane.H264.FFmpeg.Parser, as: H264_Parser
+alias Membrane.AAC
+alias Membrane.RemoteControlled, as: RC
+
+structure = [
+  child({:file_input, :h264}, %File.Source{location: "./res/input.h264"})
+  |> child({:parser, :h264}, %H264_Parser{framerate: {60, 1}})
+  |> via_in(:video)
+  |> get_child(:video_player),
+  child({:file_input, :aac}, %File.Source{location: "./res/input.aac"})
+  |> child({:parser, :aac}, AAC.Parser)
+  |> via_in(:audio)
+  |> get_child(:video_player),
+  child(:video_player, %Kino.Player.Sink{kino: kino})
+]
+
+:ok
+```
+
+```elixir
+pipeline = RC.Pipeline.start!()
+RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+```

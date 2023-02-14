@@ -37,7 +37,7 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule Track do
     @moduledoc false
 
-    defstruct pad: nil, buffered: Qex.new()
+    defstruct pad: nil, framerate: nil
 
     def new() do
       %__MODULE__{}
@@ -47,17 +47,12 @@ defmodule Membrane.Kino.Player.Sink do
       %__MODULE__{track | pad: pad}
     end
 
-    def ready?(%__MODULE__{buffered: buffered}) do
-      not Enum.empty?(buffered)
+    def set_framerate(%__MODULE__{} = track, framerate) do
+      %__MODULE__{track | framerate: framerate}
     end
 
-    def push(%__MODULE__{buffered: buffered} = track, buffer) do
-      %__MODULE__{track | buffered: Qex.push(buffered, buffer)}
-    end
-
-    def pop!(%__MODULE__{buffered: buffered} = track) do
-      {buffer, buffered} = Qex.pop!(buffered)
-      {buffer, %__MODULE__{track | buffered: buffered}}
+    def ready?(%__MODULE__{framerate: framerate, pad: pad}) do
+      framerate != nil and pad != nil
     end
   end
 
@@ -100,7 +95,6 @@ defmodule Membrane.Kino.Player.Sink do
       kino: kino,
       timer_started?: false,
       index: 0,
-      framerate: nil,
       type: type,
       tracks: tracks
     }
@@ -109,40 +103,12 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_stream_format(
-        {_mod, pad, _ref} = pad_ref,
-        stream_format,
-        _ctx,
-        %{type: type} = state
-      )
-      when pad in [:video, :audio] and type == pad do
-    %{kino: kino} = state
-    {num, den} = get_framerate(stream_format)
-    framerate_float = num / den
-    KinoPlayer.cast(kino, {:create, framerate_float})
-    tracks = %{state.tracks | pad => Track.set_pad(state.tracks[pad], pad_ref)}
+  def handle_stream_format({_mod, pad, _ref} = pad_ref, stream_format, _ctx, state) do
+    framerate = get_framerate(stream_format)
+    track = state.tracks[pad] |> Track.set_pad(pad_ref) |> Track.set_framerate(framerate)
+    tracks = %{state.tracks | pad => track}
 
-    {[], %{state | framerate: {num, den}, tracks: tracks}}
-  end
-
-  @impl true
-  def handle_stream_format(_pad, stream_format, ctx, %{type: :both, framerate: nil} = state) do
-    %{input: input} = ctx.pads
-    %{kino: kino} = state
-
-    if !input.stream_format or stream_format == input.stream_format do
-      {num, den} = get_framerate(stream_format)
-      framerate_float = num / den
-      KinoPlayer.cast(kino, {:create, framerate_float})
-      {[], %{state | framerate: {num, den}}}
-    else
-      raise "Stream format has changed while playing. This is not supported."
-    end
-  end
-
-  @impl true
-  def handle_stream_format(_pad, _stream_format, _ctx, %{type: :both} = state) do
-    {[], state}
+    {[], %{state | tracks: tracks}}
   end
 
   defp get_framerate(stream_format = %H264{}) do
@@ -156,81 +122,71 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_start_of_stream(pad, _ctx, state) do
-    timer_actions =
-      if state.timer_started? do
-        []
+  def handle_start_of_stream(_pad, _ctx, state) do
+    actions =
+      if all_tracks_ready?(state.tracks) do
+        create_player(state.tracks, state.kino)
+        start_actions(state.tracks)
       else
-        {nom, denom} = state.framerate
-        timer = {:demand_timer, Ratio.new(Time.seconds(denom), nom)}
-        [start_timer: timer]
+        []
       end
 
-    demand_actions = [demand: pad]
+    {actions, %{state | timer_started?: true}}
+  end
 
-    {timer_actions ++ demand_actions, %{state | timer_started?: true}}
+  defp all_tracks_ready?(tracks) do
+    Enum.all?(tracks, fn {_pad, track} -> Track.ready?(track) end)
+  end
+
+  defp create_player(tracks, kino) do
+    {num, den} =
+      if Map.has_key?(tracks, :video) do
+        Map.get(tracks, :video).framerate
+      else
+        Map.get(tracks, :audio).framerate
+      end
+
+    framerate_float = num / den
+    KinoPlayer.cast(kino, {:create, framerate_float})
+  end
+
+  defp start_actions(tracks) do
+    Enum.flat_map(tracks, fn {_pad, track} ->
+      {nom, denom} = track.framerate
+
+      [
+        start_timer: {{:demand_timer, track.pad}, Ratio.new(Time.seconds(denom), nom)},
+        demand: track.pad
+      ]
+    end)
   end
 
   @impl true
   def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
-    %{tracks: tracks} = state
+    payload = Membrane.Payload.to_binary(payload)
 
-    tracks = %{tracks | pad => Track.push(tracks[pad], payload)}
-    state = %{state | tracks: tracks}
+    info = %{index: state.index, type: pad}
 
-    if ready_to_send?(tracks) do
-      {buffers, tracks} = pop_buffers(tracks)
+    KinoPlayer.cast(state.kino, {:buffer, payload, info})
 
-      payload = prepare_payload(buffers, state.type)
-
-      KinoPlayer.cast(state.kino, {:buffer, payload, %{index: state.index}})
-
-      {[], %{state | index: state.index + 1, tracks: Map.new(tracks)}}
-    else
-      {[], state}
-    end
-  end
-
-  defp ready_to_send?(tracks) do
-    Map.values(tracks) |> Enum.all?(&Track.ready?/1)
-  end
-
-  defp prepare_payload(buffers, type) do
-    case type do
-      :video ->
-        buffers |> then(fn [{_name, buffer}] -> buffer end) |> Membrane.Payload.to_binary()
-
-      :audio ->
-        buffers |> then(fn [{_name, buffer}] -> buffer end) |> Membrane.Payload.to_binary()
-
-      :both ->
-        Map.new(buffers, fn {name, buffer} -> {name, Membrane.Payload.to_binary(buffer)} end)
-    end
-  end
-
-  defp pop_buffers(tracks) do
-    tracks
-    |> Enum.map(fn {name, track} -> {name, Track.pop!(track)} end)
-    |> Enum.map(fn {name, {buffer, track}} -> {{name, buffer}, {name, track}} end)
-    |> Enum.unzip()
+    {[], %{state | index: state.index + 1}}
   end
 
   @impl true
-  def handle_tick(:demand_timer, _ctx, state) do
-    demand_actions = get_demand_actions(state.tracks)
-    {demand_actions, state}
-  end
-
-  defp get_demand_actions(tracks) do
-    Map.values(tracks) |> Enum.map(fn %Track{pad: pad} -> {:demand, pad} end)
+  def handle_tick({:demand_timer, pad_ref}, _ctx, state) do
+    {[demand: pad_ref], state}
   end
 
   @impl true
   def handle_end_of_stream(_pad, _ctx, state) do
     if state.timer_started? do
-      {[stop_timer: :demand_timer], %{state | timer_started?: false, index: 0}}
+      {stop_timer_actions(state.tracks), %{state | timer_started?: false, index: 0}}
     else
       {[], state}
     end
+  end
+
+  defp stop_timer_actions(tracks) do
+    for {_pad, track} <- tracks, do: {:stop_timer, {:demand_timer, track.pad}}
   end
 end
