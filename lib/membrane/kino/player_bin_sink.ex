@@ -42,7 +42,6 @@ defmodule Membrane.Kino.Player.Bin.Sink do
   alias Kino.JS.Live, as: KinoPlayer
   alias Membrane.{AAC, H264, RemoteStream}
 
-  alias Membrane.MP4.Demuxer.ISOM, as: Demuxer
   alias Membrane.Kino
 
   def_options kino: [
@@ -69,27 +68,31 @@ defmodule Membrane.Kino.Player.Bin.Sink do
 
     structure =
       case type do
-        :both -> demuxer_structure(kino)
-        _else -> bin_input() |> child(:player, %Kino.Player.Sink{kino: kino})
+        :both ->
+          demuxer_structure(kino)
+
+        type when type in [:video, :audio] ->
+          bin_input() |> child(:player, %Kino.Player.Sink{kino: kino})
       end
 
     {[spec: structure], %{}}
   end
 
-  defp demuxer_structure(kino) do
-    [
-      bin_input() |> child(:demuxer, Demuxer),
-      get_child(:demuxer)
-      |> via_out(Pad.ref(:output, 1))
-      |> child(:h264_parser, Membrane.H264.FFmpeg.Parser)
-      |> via_in(:video)
-      |> get_child(:player),
-      get_child(:demuxer)
-      |> via_out(Pad.ref(:output, 2))
-      |> child(:aac_parser, Membrane.AAC.Parser)
-      |> via_in(:audio)
-      |> get_child(:player),
-      child(:player, %Kino.Player.Sink{kino: kino})
-    ]
+  defp demuxer_structure(_kino) do
+    raise "Membrane.MP4 does not support depayloader yet."
+    # [
+    #   bin_input() |> child(:demuxer, Demuxer),
+    #   get_child(:demuxer)
+    #   |> via_out(Pad.ref(:output, 1))
+    #   |> child(:h264_parser, Membrane.H264.FFmpeg.Parser)
+    #   |> via_in(:video)
+    #   |> get_child(:player),
+    #   get_child(:demuxer)
+    #   |> via_out(Pad.ref(:output, 2))
+    #   |> child(:aac_parser, Membrane.AAC.Parser)
+    #   |> via_in(:audio)
+    #   |> get_child(:player),
+    #   child(:player, %Kino.Player.Sink{kino: kino})
+    # ]
   end
 end
