@@ -71,8 +71,17 @@ defmodule Membrane.Kino.Player do
   @impl true
   def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
       when ctx.assigns.type == :both do
-    info = Map.put(info, :video_size, byte_size(video))
+    info = info |> Map.put(:video_size, byte_size(video)) |> Map.put_new(:type, :both)
     payload = {:binary, info, video <> audio}
+    broadcast_event(ctx, "buffer", payload)
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_cast({:buffer, buffer, %{type: type} = info}, ctx)
+      when type in [:audio, :video] and
+             ctx.assigns.type == :both do
+    payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end
