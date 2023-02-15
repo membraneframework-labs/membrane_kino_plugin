@@ -26,7 +26,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
   structure =
     child(:file_input, %File.Source{location: input_filepath})
     |> child(:parser, %Parser{framerate: {60, 1}})
-    |> child(:video_player, %Kino.Player.Sink{kino: kino})
+    |> child(:video_player, %Kino.Player.Bin.Sink{kino: kino})
 
   pipeline = RC.Pipeline.start!()
   RC.Pipeline.exec_actions(pipeline, spec: structure)
@@ -58,8 +58,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
         AAC,
         %RemoteStream{type: :bytestream, content_format: content_format}
         when content_format in [nil, MP4]
-      ),
-    demand_unit: :buffers
+      )
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
@@ -72,14 +71,14 @@ defmodule Membrane.Kino.Player.Bin.Sink do
           demuxer_structure(kino)
 
         type when type in [:video, :audio] ->
-          bin_input() |> child(:player, %Kino.Player.Sink{kino: kino})
+          bin_input() |> via_in(type) |> child(:player, %Kino.Player.Sink{kino: kino})
       end
 
     {[spec: structure], %{}}
   end
 
   defp demuxer_structure(_kino) do
-    raise "Membrane.MP4 does not support depayloader yet."
+    raise "Player bin sink cannot handle MP4 yet. Membrane.MP4 does not support depayloader yet."
     # [
     #   bin_input() |> child(:demuxer, Demuxer),
     #   get_child(:demuxer)
