@@ -26,6 +26,7 @@ defmodule Membrane.Kino.Player.Sink do
   structure =
     child(:file_input, %File.Source{location: input_filepath})
     |> child(:parser, %Parser{framerate: {60, 1}})
+    |> via_in(:video)
     |> child(:video_player, %Kino.Player.Sink{kino: kino})
 
   pipeline = RC.Pipeline.start!()
