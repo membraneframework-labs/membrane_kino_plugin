@@ -14,10 +14,12 @@ defmodule Kino.Video.Binary do
 
   KinoPlayer.cast(kino, {:create, framerate})
 
-  for frame <- generate_h264_frames() do
+  Enum.each(generate_h264_frames(),
+  fn frame ->
     KinoPlayer.cast(kino, {:buffer, frame, %{}})
     Process.sleep(round(1000 / framerate)))
   end
+  )
   ```
   """
 
