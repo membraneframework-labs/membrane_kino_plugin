@@ -38,7 +38,7 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule Track do
     @moduledoc false
 
-    defstruct pad: nil, framerate: nil
+    defstruct pad: nil, framerate: nil, eos: false
 
     def new() do
       %__MODULE__{}
@@ -50,6 +50,14 @@ defmodule Membrane.Kino.Player.Sink do
 
     def set_framerate(%__MODULE__{} = track, framerate) do
       %__MODULE__{track | framerate: framerate}
+    end
+
+    def stop(%__MODULE__{} = track) do
+      %__MODULE__{track | eos: true}
+    end
+
+    def stopped?(%__MODULE__{eos: eos}) do
+      eos
     end
 
     def ready?(%__MODULE__{framerate: framerate, pad: pad}) do
@@ -179,15 +187,20 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_end_of_stream(_pad, _ctx, state) do
-    if state.timer_started? do
-      {stop_timer_actions(state.tracks), %{state | timer_started?: false, index: 0}}
-    else
-      {[], state}
-    end
+  def handle_end_of_stream({_mod, pad, _ref} = pad_ref, _ctx, state) do
+    tracks = Map.update!(state.tracks, pad, &Track.stop/1)
+
+    state =
+      if all_tracks_stopped?(tracks) do
+        %{state | timer_started?: false, index: 0}
+      else
+        state
+      end
+
+    {[stop_timer: {:demand_timer, pad_ref}], %{state | tracks: tracks}}
   end
 
-  defp stop_timer_actions(tracks) do
-    for {_pad, track} <- tracks, do: {:stop_timer, {:demand_timer, track.pad}}
+  defp all_tracks_stopped?(tracks) do
+    Enum.all?(tracks, fn {_pad, track} -> Track.stopped?(track) end)
   end
 end
