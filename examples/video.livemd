@@ -9,9 +9,7 @@ Mix.install([
   {:membrane_kino_plugin, path: ".."},
   {:membrane_file_plugin, "~> 0.13.0"},
   {:membrane_raw_video_format, "~> 0.2"},
-  {:membrane_generator_plugin,
-   github: "membraneframework/membrane_generator_plugin", branch: "core-v0.11"},
-  {:membrane_ffmpeg_swscale_plugin, "~> 0.11.0"}
+  {:membrane_h264_ffmpeg_plugin, "~> 0.25.2"}
 ])
 ```
 
@@ -25,29 +23,22 @@ kino = Kino.Video.Binary.new()
 import Membrane.ChildrenSpec
 
 alias Membrane.{
-  BlankVideoGenerator,
-  FFmpeg.SWScale.PixelFormatConverter,
+  File,
   RawVideo,
-  RemoteControlled,
   Kino
 }
 
-pipeline = RemoteControlled.Pipeline.start!()
+alias Membrane.H264.FFmpeg.Parser
+alias Membrane.RemoteControlled, as: RC
+
+input_filepath = "./res/input.h264"
 
 structure =
-  child(:input_video, %BlankVideoGenerator{
-    stream_format: %RawVideo{
-      pixel_format: :I420,
-      height: 300,
-      width: 300,
-      framerate: {5, 1},
-      aligned: true
-    },
-    duration: Membrane.Time.seconds(3)
-  })
-  |> child(:to_rgb, %PixelFormatConverter{format: :RGBA})
+  child(:file_input, %File.Source{location: input_filepath})
+  |> child(:parser, %Parser{framerate: {60, 1}})
   |> child(:video_player, %Kino.Video.Sink{kino: kino})
 
-RemoteControlled.Pipeline.exec_actions(pipeline, spec: structure)
-RemoteControlled.Pipeline.exec_actions(pipeline, playback: :playing)
+pipeline = RC.Pipeline.start!()
+RC.Pipeline.exec_actions(pipeline, spec: structure)
+RC.Pipeline.exec_actions(pipeline, playback: :playing)
 ```
