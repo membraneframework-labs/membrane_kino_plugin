@@ -113,6 +113,10 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_stream_format({_mod, pad, _ref} = pad_ref, stream_format, _ctx, state) do
+    if Track.ready?(state.tracks[pad]) do
+      raise "Stream format changed for pad #{inspect(pad)} but it was already ready."
+    end
+
     framerate = get_framerate(stream_format)
     track = state.tracks[pad] |> Track.set_pad(pad_ref) |> Track.set_framerate(framerate)
     tracks = %{state.tracks | pad => track}
