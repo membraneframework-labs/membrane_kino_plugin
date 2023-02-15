@@ -1,0 +1,53 @@
+# Video
+
+```elixir
+File.cd(__DIR__)
+
+Mix.install([
+  {:kino, "~> 0.8.1"},
+  {:membrane_core, "~> 0.11.2"},
+  {:membrane_kino_plugin, path: ".."},
+  {:membrane_file_plugin, "~> 0.13.0"},
+  {:membrane_raw_video_format, "~> 0.2"},
+  {:membrane_generator_plugin,
+   github: "membraneframework/membrane_generator_plugin", branch: "core-v0.11"},
+  {:membrane_ffmpeg_swscale_plugin, "~> 0.11.0"}
+])
+```
+
+## Section
+
+```elixir
+kino = Kino.Video.Binary.new()
+```
+
+```elixir
+import Membrane.ChildrenSpec
+
+alias Membrane.{
+  BlankVideoGenerator,
+  FFmpeg.SWScale.PixelFormatConverter,
+  RawVideo,
+  RemoteControlled,
+  Kino
+}
+
+pipeline = RemoteControlled.Pipeline.start!()
+
+structure =
+  child(:input_video, %BlankVideoGenerator{
+    stream_format: %RawVideo{
+      pixel_format: :I420,
+      height: 300,
+      width: 300,
+      framerate: {5, 1},
+      aligned: true
+    },
+    duration: Membrane.Time.seconds(3)
+  })
+  |> child(:to_rgb, %PixelFormatConverter{format: :RGBA})
+  |> child(:video_player, %Kino.Video.Sink{kino: kino})
+
+RemoteControlled.Pipeline.exec_actions(pipeline, spec: structure)
+RemoteControlled.Pipeline.exec_actions(pipeline, playback: :playing)
+```

@@ -1,25 +1,25 @@
-defmodule Membrane.Template.Mixfile do
+defmodule Membrane.Kino.Mixfile do
   use Mix.Project
 
   @version "0.1.0"
-  @github_url "https://github.com/membraneframework/membrane_template_plugin"
+  @github_url "https://github.com/membraneframework/membrane_kino_plugin"
 
   def project do
     [
-      app: :membrane_template_plugin,
+      app: :membrane_kino_plugin,
       version: @version,
-      elixir: "~> 1.13",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: dialyzer(),
 
       # hex
-      description: "Template Plugin for Membrane Multimedia Framework",
+      description: "Kino Plugin for Membrane Multimedia Framework",
       package: package(),
 
       # docs
-      name: "Membrane Template plugin",
+      name: "Membrane Kino plugin",
       source_url: @github_url,
       homepage_url: "https://membraneframework.org",
       docs: docs()
@@ -37,7 +37,16 @@ defmodule Membrane.Template.Mixfile do
 
   defp deps do
     [
-      {:membrane_core, "~> 0.10.0"},
+      {:membrane_core, "~> 0.11.2"},
+      {:kino, "~> 0.8.1"},
+
+      # Testing
+      {:membrane_file_plugin, "~> 0.13.0", only: :test},
+      {:membrane_raw_video_format, "~> 0.2", only: :test},
+      {:membrane_generator_plugin,
+       github: "membraneframework/membrane_generator_plugin", branch: "core-v0.11", only: :test},
+
+      # Development
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
@@ -74,7 +83,7 @@ defmodule Membrane.Template.Mixfile do
       extras: ["README.md", "LICENSE"],
       formatters: ["html"],
       source_ref: "v#{@version}",
-      nest_modules_by_prefix: [Membrane.Template]
+      nest_modules_by_prefix: [Membrane.Kino]
     ]
   end
 end
