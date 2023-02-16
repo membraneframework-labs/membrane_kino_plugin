@@ -152,15 +152,12 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   defp create_player(tracks, kino) do
-    {num, den} =
-      if Map.has_key?(tracks, :video) do
-        Map.get(tracks, :video).framerate
-      else
-        Map.get(tracks, :audio).framerate
-      end
+    main_track = Map.get(tracks, :video) || Map.get(tracks, :audio)
+    {num, den} = main_track.framerate
 
     framerate_float = num / den
     KinoPlayer.cast(kino, {:create, framerate_float})
+    IO.inspect("Created player")
   end
 
   defp start_actions(tracks) do
