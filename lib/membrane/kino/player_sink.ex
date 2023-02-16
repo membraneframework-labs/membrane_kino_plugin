@@ -157,7 +157,6 @@ defmodule Membrane.Kino.Player.Sink do
 
     framerate_float = num / den
     KinoPlayer.cast(kino, {:create, framerate_float})
-    IO.inspect("Created player")
   end
 
   defp start_actions(tracks) do
