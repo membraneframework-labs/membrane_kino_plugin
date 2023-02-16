@@ -48,9 +48,6 @@ defmodule Membrane.Kino.Player.Sink do
                   "Kino element handle. It should be initialized before the pipeline is started."
               ]
 
-  # The measured latency needed to show a frame on a screen.
-  @latency 20 |> Time.milliseconds()
-
   def_input_pad :input,
     accepted_format: any_of(H264, AAC),
     demand_unit: :buffers
@@ -58,7 +55,7 @@ defmodule Membrane.Kino.Player.Sink do
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
     state = %{kino: options.kino, timer_started?: false, index: 0, framerate: nil}
-    {[latency: @latency], state}
+    {[], state}
   end
 
   @impl true
