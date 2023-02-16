@@ -1,6 +1,6 @@
 defmodule Membrane.Kino.Player do
   @moduledoc """
-  Kino component capable of playing a video from the h264 binary frames.
+  Kino component capable of playing a H264 video and AAC audio from the stream buffers.
 
   Element provides asynchronous API for sending frames to the player:
   ```elixir
@@ -36,8 +36,6 @@ defmodule Membrane.Kino.Player do
   def new(type \\ :video, _opts \\ []) do
     Kino.JS.Live.new(__MODULE__, {type})
   end
-
-  # def get_type()
 
   @impl true
   def init({type}, ctx) do
