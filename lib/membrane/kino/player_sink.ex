@@ -38,18 +38,10 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule Track do
     @moduledoc false
 
-    defstruct pad: nil, framerate: nil, eos: false
+    defstruct pad: nil, framerate: nil, eos: false, stream_type: nil
 
     def new() do
       %__MODULE__{}
-    end
-
-    def set_pad(%__MODULE__{} = track, pad) do
-      %__MODULE__{track | pad: pad}
-    end
-
-    def set_framerate(%__MODULE__{} = track, framerate) do
-      %__MODULE__{track | framerate: framerate}
     end
 
     def stop(%__MODULE__{} = track) do
@@ -60,8 +52,8 @@ defmodule Membrane.Kino.Player.Sink do
       eos
     end
 
-    def ready?(%__MODULE__{framerate: framerate, pad: pad}) do
-      framerate != nil and pad != nil
+    def ready?(track = %__MODULE__{framerate: framerate, pad: pad}) do
+      framerate != nil and pad != nil and not stopped?(track)
     end
   end
 
@@ -71,6 +63,7 @@ defmodule Membrane.Kino.Player.Sink do
 
   alias Kino.JS.Live, as: KinoPlayer
   alias Membrane.{AAC, Buffer, H264, Time}
+  alias Membrane.MP4
 
   def_options kino: [
                 spec: KinoPlayer.t(),
@@ -79,12 +72,20 @@ defmodule Membrane.Kino.Player.Sink do
               ]
 
   def_input_pad :audio,
-    accepted_format: AAC,
+    accepted_format:
+      any_of(
+        AAC,
+        %MP4.Payload{content: %MP4.Payload.AAC{}}
+      ),
     demand_unit: :buffers,
     availability: :on_request
 
   def_input_pad :video,
-    accepted_format: H264,
+    accepted_format:
+      any_of(
+        H264,
+        %MP4.Payload{content: %MP4.Payload.AVC1{}}
+      ),
     demand_unit: :buffers,
     availability: :on_request
 
@@ -118,8 +119,17 @@ defmodule Membrane.Kino.Player.Sink do
     end
 
     framerate = get_framerate(stream_format)
-    track = state.tracks[pad] |> Track.set_pad(pad_ref) |> Track.set_framerate(framerate)
-    tracks = %{state.tracks | pad => track}
+    stream_type = get_stream_type(stream_format)
+
+    tracks =
+      Map.update!(state.tracks, pad, fn track ->
+        %Track{
+          track
+          | stream_type: stream_type,
+            pad: pad_ref,
+            framerate: framerate
+        }
+      end)
 
     {[], %{state | tracks: tracks}}
   end
@@ -134,10 +144,31 @@ defmodule Membrane.Kino.Player.Sink do
     {num, den}
   end
 
+  defp get_framerate(stream_format = %MP4.Payload{content: content}) do
+    case content do
+      %MP4.Payload.AVC1{} -> {stream_format.timescale, 256}
+      %MP4.Payload.AAC{} -> {stream_format.timescale, 1024}
+    end
+  end
+
+  defp get_stream_type(%MP4.Payload{}) do
+    :mp4
+  end
+
+  defp get_stream_type(_stream_format) do
+    :raw
+  end
+
+  @impl true
+  def handle_start_of_stream(_pad, _ctx, state = %{timer_started?: true}) do
+    {[], state}
+  end
+
   @impl true
   def handle_start_of_stream(_pad, _ctx, state) do
     actions =
       if all_tracks_ready?(state.tracks) do
+        IO.inspect(state.tracks, label: "tracks")
         create_player(state.tracks, state.kino)
         start_actions(state.tracks)
       else
@@ -171,12 +202,15 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
+  def handle_write({_mod, pad, _ref}, %Buffer{payload: payload, dts: dts}, _ctx, state) do
+    stream_type = state.tracks[pad].stream_type
     payload = Membrane.Payload.to_binary(payload)
+    info = %{index: state.index, type: pad, stream: stream_type, dts: dts}
+    data = {:buffer, payload, info}
 
-    info = %{index: state.index, type: pad}
+    IO.inspect(data, label: "data")
 
-    KinoPlayer.cast(state.kino, {:buffer, payload, info})
+    KinoPlayer.cast(state.kino, data)
 
     {[], %{state | index: state.index + 1}}
   end

@@ -8,7 +8,8 @@ Mix.install([
   {:membrane_core, "~> 0.11.2"},
   {:membrane_kino_plugin, path: ".."},
   {:membrane_file_plugin, "~> 0.13.0"},
-  {:membrane_aac_plugin, "~> 0.13.0"}
+  {:membrane_aac_plugin, "~> 0.13.0"},
+  {:membrane_mp4_format, "~> 0.7.0"}
 ])
 ```
 

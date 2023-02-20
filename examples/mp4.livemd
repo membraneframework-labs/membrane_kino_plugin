@@ -1,0 +1,56 @@
+# Playing MP4 from file
+
+```elixir
+File.cd(__DIR__)
+Logger.configure(level: :error)
+
+Mix.install([
+  {:membrane_core, "~> 0.11.2"},
+  {:membrane_kino_plugin, path: ".."},
+  {:membrane_file_plugin, "~> 0.13.0"},
+  {:membrane_mp4_plugin, "~> 0.19.0"}
+])
+```
+
+## Section
+
+```elixir
+kino = Membrane.Kino.Player.new(:both)
+```
+
+```elixir
+import Membrane.ChildrenSpec
+
+require Membrane.Pad
+
+alias Membrane.{
+  File,
+  RawVideo,
+  Kino,
+  MP4,
+  Pad
+}
+
+alias Membrane.RemoteControlled, as: RC
+
+structure = [
+  child({:file_input, :h264}, %File.Source{location: "./res/input.mp4"})
+  |> child(:demuxer, MP4.Demuxer.ISOM),
+  get_child(:demuxer)
+  |> via_out(Pad.ref(:output, 1))
+  |> via_in(:video)
+  |> get_child(:video_player),
+  get_child(:demuxer)
+  |> via_out(Pad.ref(:output, 2))
+  |> via_in(:audio)
+  |> get_child(:video_player),
+  child(:video_player, %Kino.Player.Sink{kino: kino})
+]
+
+:ok
+```
+
+```elixir
+pipeline = RC.Pipeline.start!()
+RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+```
