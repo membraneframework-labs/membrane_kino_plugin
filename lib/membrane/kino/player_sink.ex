@@ -38,7 +38,7 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule Track do
     @moduledoc false
 
-    defstruct pad: nil, framerate: nil, eos: false, stream_type: nil
+    defstruct pad: nil, framerate: nil, eos: false, stream_type: nil, mp4: %{}
 
     def new() do
       %__MODULE__{}
@@ -121,13 +121,26 @@ defmodule Membrane.Kino.Player.Sink do
     framerate = get_framerate(stream_format)
     stream_type = get_stream_type(stream_format)
 
+    codec =
+      case stream_format do
+        %MP4.Payload{content: %MP4.Payload.AVC1{avcc: avcc}} ->
+          avcc
+          |> Membrane.Kino.H264.Parser.DecoderConfiguration.parse()
+          |> then(fn {:ok, res} -> res end)
+          |> Membrane.Kino.H264.Parser.DecoderConfiguration.to_avc1()
+
+        _else ->
+          nil
+      end
+
     tracks =
       Map.update!(state.tracks, pad, fn track ->
         %Track{
           track
           | stream_type: stream_type,
             pad: pad_ref,
-            framerate: framerate
+            framerate: framerate,
+            mp4: %{codec: codec}
         }
       end)
 
@@ -186,8 +199,11 @@ defmodule Membrane.Kino.Player.Sink do
     main_track = Map.get(tracks, :video) || Map.get(tracks, :audio)
     {num, den} = main_track.framerate
 
-    framerate_float = num / den
-    KinoPlayer.cast(kino, {:create, framerate_float})
+    info = %{
+      framerate: num / den
+    }
+
+    KinoPlayer.cast(kino, {:create, info})
   end
 
   defp start_actions(tracks) do
@@ -203,12 +219,13 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_write({_mod, pad, _ref}, %Buffer{payload: payload, dts: dts}, _ctx, state) do
-    stream_type = state.tracks[pad].stream_type
+    track = state.tracks[pad]
+    stream_type = track.stream_type
     payload = Membrane.Payload.to_binary(payload)
-    info = %{index: state.index, type: pad, stream: stream_type, dts: dts}
+    info = %{index: state.index, type: pad, stream: stream_type, dts: dts, mp4: track.mp4}
     data = {:buffer, payload, info}
 
-    IO.inspect(data, label: "data")
+    # IO.inspect(data, label: "data")
 
     KinoPlayer.cast(state.kino, data)
 

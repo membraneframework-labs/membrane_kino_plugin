@@ -54,3 +54,8 @@ structure = [
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
 ```
+
+```elixir
+"avc1.profile_idc|constraint_set_flags|level_idc|[.chroma_format_idc]"
+"avc1.10042"
+```

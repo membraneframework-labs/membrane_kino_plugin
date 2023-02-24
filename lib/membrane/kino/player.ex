@@ -61,9 +61,13 @@ defmodule Membrane.Kino.Player do
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
   end
 
+  @type create_config_t :: %{optional(:mp4) => %{}, framerate: float()}
+
+  @spec handle_cast({:create, create_config_t()}, Kino.JS.Live.Context.t()) ::
+          {:noreply, Kino.JS.Live.Context.t()}
   @impl true
-  def handle_cast({:create, framerate}, ctx) do
-    payload = %{framerate: framerate}
+  def handle_cast({:create, config}, ctx) do
+    payload = config
     broadcast_event(ctx, "create", payload)
     {:noreply, ctx}
   end
