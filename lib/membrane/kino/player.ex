@@ -34,11 +34,11 @@ defmodule Membrane.Kino.Player do
   """
   @spec new(:video | :audio | :both, []) :: t()
   def new(type \\ :video, _opts \\ []) do
-    Kino.JS.Live.new(__MODULE__, {type})
+    Kino.JS.Live.new(__MODULE__, type)
   end
 
   @impl true
-  def init({type}, ctx) do
+  def init(type, ctx) do
     {:ok, assign(ctx, clients: [], type: type)}
   end
 
