@@ -1,11 +1,11 @@
-defmodule Kino.Video.Binary do
+defmodule Membrane.Kino.Player do
   @moduledoc """
-  Kino component capable of playing a video from the h264 binary frames.
+  Kino component capable of playing a H264 video and AAC audio from the stream buffers.
 
   Element provides asynchronous API for sending frames to the player:
   ```elixir
   # upper cell
-  kino = Kino.Video.Binary.new()
+  kino = Membrane.Kino.Player.new(:video)
 
   #lower cell
   alias = Kino.JS.Live, as: KinoPlayer
@@ -23,22 +23,23 @@ defmodule Kino.Video.Binary do
   ```
   """
 
-  use Kino.JS, assets_path: "lib/assets/video_binary"
+  use Kino.JS, assets_path: "lib/assets/player"
   use Kino.JS.Live
 
   @type t() :: Kino.JS.Live.t()
 
   @doc """
-  Creates a new Kino.Video.Binary component. Returns a handle to the element.
+  Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  def new(_opts \\ []) do
-    Kino.JS.Live.new(__MODULE__, {})
+  @spec new(:video | :audio | :both, []) :: t()
+  def new(type \\ :video, _opts \\ []) do
+    Kino.JS.Live.new(__MODULE__, type)
   end
 
   @impl true
-  def init(_args, ctx) do
-    {:ok, assign(ctx, clients: [])}
+  def init(type, ctx) do
+    {:ok, assign(ctx, clients: [], type: type)}
   end
 
   @impl true
@@ -46,8 +47,8 @@ defmodule Kino.Video.Binary do
     client_id = random_id()
 
     info = %{
-      client_id: client_id,
-      clients: ctx.assigns.clients
+      type: ctx.assigns.type,
+      client_id: client_id
     }
 
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
@@ -61,7 +62,16 @@ defmodule Kino.Video.Binary do
   end
 
   @impl true
-  def handle_cast({:buffer, buffer, info}, ctx) do
+  def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
+      when ctx.assigns.type == :both do
+    info = Map.put(info, :video_size, byte_size(video))
+    payload = {:binary, info, video <> audio}
+    broadcast_event(ctx, "buffer", payload)
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
     payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
