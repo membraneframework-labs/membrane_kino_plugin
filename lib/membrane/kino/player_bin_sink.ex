@@ -79,19 +79,5 @@ defmodule Membrane.Kino.Player.Bin.Sink do
 
   defp demuxer_structure(_kino) do
     raise "Player bin sink cannot handle MP4 yet. Membrane.MP4 does not support depayloader yet."
-    # [
-    #   bin_input() |> child(:demuxer, Demuxer),
-    #   get_child(:demuxer)
-    #   |> via_out(Pad.ref(:output, 1))
-    #   |> child(:h264_parser, Membrane.H264.FFmpeg.Parser)
-    #   |> via_in(:video)
-    #   |> get_child(:player),
-    #   get_child(:demuxer)
-    #   |> via_out(Pad.ref(:output, 2))
-    #   |> child(:aac_parser, Membrane.AAC.Parser)
-    #   |> via_in(:audio)
-    #   |> get_child(:player),
-    #   child(:player, %Kino.Player.Sink{kino: kino})
-    # ]
   end
 end
