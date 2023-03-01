@@ -38,7 +38,7 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule Track do
     @moduledoc false
 
-    defstruct pad: nil, framerate: nil, eos: false
+    defstruct pad: nil, framerate: nil, eos: false, added: false
 
     def new() do
       %__MODULE__{}
@@ -62,6 +62,10 @@ defmodule Membrane.Kino.Player.Sink do
 
     def ready?(%__MODULE__{framerate: framerate, pad: pad}) do
       framerate != nil and pad != nil
+    end
+
+    def added?(%__MODULE__{added: added}) do
+      added
     end
   end
 
@@ -109,6 +113,20 @@ defmodule Membrane.Kino.Player.Sink do
     }
 
     {[], state}
+  end
+
+  @impl true
+  def handle_pad_added(Pad.ref(pad, _id), _ctx, state) do
+    if not Map.has_key?(state.tracks, pad) do
+      raise "Unexpected pad #{inspect(pad)} for a player type #{inspect(state.type)} added."
+    end
+
+    if Map.get(state.tracks, pad) |> Track.added? do
+      raise "Pad #{inspect(pad)} has been already added."
+    end
+
+    tracks = Map.update!(state.tracks, pad, fn track -> %Track{track | added: true} end)
+    {[], %{state | tracks: tracks}}
   end
 
   @impl true
