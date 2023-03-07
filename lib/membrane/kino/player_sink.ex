@@ -179,16 +179,16 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_start_of_stream(_pad, _ctx, state) do
-    actions =
+    {actions, state} =
       if all_tracks_ready?(state.tracks) do
         IO.inspect(state.tracks, label: "tracks")
         create_player(state.tracks, state.kino)
-        start_actions(state.tracks)
+        {start_actions(state.tracks), %{state | timer_started?: true}}
       else
-        []
+        {[], state}
       end
 
-    {actions, %{state | timer_started?: true}}
+    {actions, state}
   end
 
   defp all_tracks_ready?(tracks) do
@@ -202,6 +202,8 @@ defmodule Membrane.Kino.Player.Sink do
     info = %{
       framerate: num / den
     }
+
+    info = if main_track.stream_type == :mp4, do: Map.put(info, :mp4, main_track.mp4), else: info
 
     KinoPlayer.cast(kino, {:create, info})
   end
@@ -225,7 +227,7 @@ defmodule Membrane.Kino.Player.Sink do
     info = %{index: state.index, type: pad, stream: stream_type, dts: dts, mp4: track.mp4}
     data = {:buffer, payload, info}
 
-    # IO.inspect(data, label: "data")
+    IO.inspect(data, label: "data")
 
     KinoPlayer.cast(state.kino, data)
 

@@ -18,6 +18,7 @@ Mix.install([
 
 ```elixir
 kino = Membrane.Kino.Player.new(:both)
+:ok
 ```
 
 ```elixir
@@ -46,6 +47,10 @@ structure = [
 ]
 
 :ok
+```
+
+```elixir
+kino
 ```
 
 ```elixir
