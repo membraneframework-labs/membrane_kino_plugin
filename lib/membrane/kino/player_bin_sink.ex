@@ -1,9 +1,6 @@
 defmodule Membrane.Kino.Player.Bin.Sink do
   @moduledoc """
-  This module provides a video and audio player sink compatible with the Livebook environment.
-
-  Livebook handles multimedia and specific media by using the Kino library and its extensions.
-  This module integrate special `Membrane.Kino.Player` element into the Membrane pipeline and shows video in livebook's cells.
+  This module provides an universal video and audio player sink compatible with the Livebook environment.
 
   ## Example
   ``` elixir
@@ -50,7 +47,6 @@ defmodule Membrane.Kino.Player.Bin.Sink do
                   "Kino element handle. It should be initialized before the pipeline is started."
               ]
 
-  # The measured latency needed to show a frame on a screen.
   def_input_pad :input,
     accepted_format:
       any_of(
