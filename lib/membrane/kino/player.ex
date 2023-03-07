@@ -28,13 +28,20 @@ defmodule Membrane.Kino.Player do
 
   @type t() :: Kino.JS.Live.t()
 
+  @type player_type_t :: :video | :audio | :both
+
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  @spec new(:video | :audio | :both, []) :: t()
+  @spec new(player_type_t, []) :: t()
   def new(type \\ :video, _opts \\ []) do
     Kino.JS.Live.new(__MODULE__, type)
+  end
+
+  @impl true
+  def handle_call(:get_type, _from, ctx) do
+    {:reply, ctx.assigns.type, ctx}
   end
 
   @impl true
@@ -64,8 +71,17 @@ defmodule Membrane.Kino.Player do
   @impl true
   def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
       when ctx.assigns.type == :both do
-    info = Map.put(info, :video_size, byte_size(video))
+    info = info |> Map.put(:video_size, byte_size(video)) |> Map.put_new(:type, :both)
     payload = {:binary, info, video <> audio}
+    broadcast_event(ctx, "buffer", payload)
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_cast({:buffer, buffer, %{type: type} = info}, ctx)
+      when type in [:audio, :video] and
+             ctx.assigns.type == :both do
+    payload = {:binary, info, buffer}
     broadcast_event(ctx, "buffer", payload)
     {:noreply, ctx}
   end
