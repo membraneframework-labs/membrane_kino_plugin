@@ -121,7 +121,7 @@ defmodule Membrane.Kino.Player.Sink do
       raise "Unexpected pad #{inspect(pad)} for a player type #{inspect(state.type)} added."
     end
 
-    if Map.get(state.tracks, pad) |> Track.added? do
+    if Map.get(state.tracks, pad) |> Track.added?() do
       raise "Pad #{inspect(pad)} has been already added."
     end
 
@@ -130,16 +130,24 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_stream_format({_mod, pad, _ref} = pad_ref, stream_format, _ctx, state) do
+  def handle_stream_format({_mod, pad, _ref} = pad_ref, stream_format, ctx, state) do
+    IO.inspect(stream_format, label: "stream_format")
+
     if Track.ready?(state.tracks[pad]) do
-      raise "Stream format changed for pad #{inspect(pad)} but it was already ready."
+      input = Map.fetch!(ctx.pads, pad_ref)
+
+      if input.stream_format && stream_format != input.stream_format do
+        raise "Stream format changed for pad #{inspect(pad)} but it was already set."
+      end
+
+      {[], state}
+    else
+      framerate = get_framerate(stream_format)
+      track = state.tracks[pad] |> Track.set_pad(pad_ref) |> Track.set_framerate(framerate)
+      tracks = %{state.tracks | pad => track}
+
+      {[], %{state | tracks: tracks}}
     end
-
-    framerate = get_framerate(stream_format)
-    track = state.tracks[pad] |> Track.set_pad(pad_ref) |> Track.set_framerate(framerate)
-    tracks = %{state.tracks | pad => track}
-
-    {[], %{state | tracks: tracks}}
   end
 
   defp get_framerate(stream_format = %H264{}) do
