@@ -131,8 +131,6 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_stream_format({_mod, pad, _ref} = pad_ref, stream_format, ctx, state) do
-    IO.inspect(stream_format, label: "stream_format")
-
     if Track.ready?(state.tracks[pad]) do
       input = Map.fetch!(ctx.pads, pad_ref)
 
