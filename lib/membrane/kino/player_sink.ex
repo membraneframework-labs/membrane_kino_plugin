@@ -83,12 +83,12 @@ defmodule Membrane.Kino.Player.Sink do
               ]
 
   def_input_pad :audio,
-    accepted_format: AAC,
+    accepted_format: %AAC{encapsulation: :ADTS},
     demand_unit: :buffers,
     availability: :on_request
 
   def_input_pad :video,
-    accepted_format: H264,
+    accepted_format: %H264{profile: :baseline},
     demand_unit: :buffers,
     availability: :on_request
 
