@@ -88,7 +88,7 @@ defmodule Membrane.Kino.Player.Sink do
     availability: :on_request
 
   def_input_pad :video,
-    accepted_format: %H264{profile: :baseline},
+    accepted_format: %H264{profile: profile} when profile in [:constrained_baseline, :baseline],
     demand_unit: :buffers,
     availability: :on_request
 
