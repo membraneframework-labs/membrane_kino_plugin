@@ -60,13 +60,12 @@ defmodule Membrane.Kino.Player do
   end
 
   @impl true
-  def handle_cast({:create, framerate}, ctx) do
+  def handle_call({:create, framerate}, from, ctx) do
     payload = %{framerate: framerate}
 
     broadcast_event(ctx, "create", payload)
-    Process.send_after(self(), :jmuxer_check_ready, @jmuxer_check_interval_ms)
 
-    {:noreply, ctx}
+    {:noreply, assign(ctx, created_from: from)}
   end
 
   @impl true
@@ -92,16 +91,8 @@ defmodule Membrane.Kino.Player do
   end
 
   @impl true
-  def handle_info(:jmuxer_check_ready, ctx) do
-    if not ctx.assigns.jmuxer_ready do
-      raise JMuxerError, message: "JMuxer cannot be initialized"
-    end
-
-    {:noreply, ctx}
-  end
-
-  @impl true
-  def handle_event("jmuxer_ready", _id, ctx) do
+  def handle_event("jmuxer_ready", _info, ctx) do
+    GenServer.reply(ctx.assigns.created_from, {:ok, :player_created})
     {:noreply, assign(ctx, jmuxer_ready: true)}
   end
 
