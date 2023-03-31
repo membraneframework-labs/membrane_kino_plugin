@@ -65,7 +65,7 @@ defmodule Membrane.Kino.Player do
 
     broadcast_event(ctx, "create", payload)
 
-    {:noreply, assign(ctx, created_from: from)}
+    {:noreply, assign(ctx, create_from: from)}
   end
 
   @impl true
@@ -92,7 +92,7 @@ defmodule Membrane.Kino.Player do
 
   @impl true
   def handle_event("jmuxer_ready", _info, ctx) do
-    GenServer.reply(ctx.assigns.created_from, {:ok, :player_created})
+    GenServer.reply(ctx.assigns.create_from, {:ok, :player_created})
     {:noreply, assign(ctx, jmuxer_ready: true)}
   end
 
