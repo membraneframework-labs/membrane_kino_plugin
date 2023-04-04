@@ -83,12 +83,12 @@ defmodule Membrane.Kino.Player.Sink do
               ]
 
   def_input_pad :audio,
-    accepted_format: AAC,
+    accepted_format: %AAC{encapsulation: :ADTS},
     demand_unit: :buffers,
     availability: :on_request
 
   def_input_pad :video,
-    accepted_format: H264,
+    accepted_format: %H264{profile: profile} when profile in [:constrained_baseline, :baseline],
     demand_unit: :buffers,
     availability: :on_request
 
@@ -180,7 +180,7 @@ defmodule Membrane.Kino.Player.Sink do
     {num, den} = main_track.framerate
 
     framerate_float = num / den
-    KinoPlayer.cast(kino, {:create, framerate_float})
+    {:ok, :player_created} = KinoPlayer.call(kino, {:create, framerate_float})
   end
 
   defp start_actions(tracks) do
