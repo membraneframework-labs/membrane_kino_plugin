@@ -8,12 +8,18 @@ defmodule Membrane.Kino.Input do
 
   @impl true
   def handle_connect(ctx) do
+    ctx =
+      assign(ctx,
+        client: nil
+      )
+
+    {:ok, ctx}
     {:ok, nil, ctx}
   end
 
   @impl true
   def handle_event("audio_frame", {:binary, info, binary}, ctx) do
-    if Map.has_key?(ctx.assigns, :client) do
+    if ctx.assigns.client do
       send(ctx.assigns.client, {:audio_frame, info, binary})
     end
 
@@ -21,8 +27,22 @@ defmodule Membrane.Kino.Input do
   end
 
   @impl true
-  def handle_cast({:register, from}, ctx) do
-    {:noreply, assign(ctx, client: from)}
+  def handle_event("recording_started", _info, ctx) do
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("recording_stopped", _info, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, :end_of_stream)
+    end
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_call(:register, {from, _alias}, ctx) do
+    {:reply, :ok, assign(ctx, client: from)}
   end
 
   @spec register(Kino.JS.Live.t(), pid()) :: :ok

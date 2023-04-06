@@ -42,9 +42,20 @@ defmodule Membrane.Kino.Mixfile do
       {:kino, github: "Janix4000/kino", branch: "fix-js-live-server-handle-call-noreply"},
       {:membrane_h264_format, "~> 0.5.0"},
       {:membrane_aac_format, "~> 0.7.0"},
+      {:membrane_opus_format, "~> 0.3.0"},
+      {:membrane_matroska_format, "~> 0.1.0"},
+      {:membrane_funnel_plugin, "~> 0.7.0"},
+
       # Testing
       {:membrane_file_plugin, "~> 0.13.0"},
       {:membrane_raw_video_format, "~> 0.2", only: :test},
+      {:membrane_opus_plugin, "~> 0.16.0", only: :test},
+      {:membrane_aac_fdk_plugin, "~> 0.14.0", only: :test},
+      # {:membrane_matroska_plugin, "~> 0.2.0", only: :test},
+      {:membrane_matroska_plugin,
+       github: "membraneframework/membrane_matroska_plugin",
+       branch: "fix_float_parsing",
+       only: :test},
       {:membrane_generator_plugin,
        github: "membraneframework/membrane_generator_plugin", branch: "core-v0.11", only: :test},
 
