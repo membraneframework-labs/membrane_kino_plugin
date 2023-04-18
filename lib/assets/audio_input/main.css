@@ -1,0 +1,55 @@
+#record-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #f8f8f8;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  position: relative;
+}
+
+#record-button:hover {
+  background-color: #e0e0e0;
+}
+
+#record-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+#record-button .ri-mic-line {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+#record-button span {
+  font-size: 1rem;
+  color: #666;
+}
+
+#record-button .recording {
+  background-color: #ff5252;
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+
+#record-button .recording .ri-mic-line {
+  display: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 82, 82, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+  }
+}
