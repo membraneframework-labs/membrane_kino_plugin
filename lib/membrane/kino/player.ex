@@ -34,24 +34,27 @@ defmodule Membrane.Kino.Player do
   use Kino.JS, assets_path: "lib/assets/player"
   use Kino.JS.Live
 
+  alias Membrane.Time
+
   @type t() :: Kino.JS.Live.t()
 
   @type player_type_t :: :video | :audio | :both
-
-  @jmuxer_check_interval_ms 1000
 
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
   """
   @spec new(player_type_t, []) :: t()
-  def new(type \\ :video, _opts \\ []) do
-    Kino.JS.Live.new(__MODULE__, type)
+  def new(type \\ :video, opts \\ []) do
+    opts = Keyword.validate!(opts, flush_time: Time.milliseconds(0))
+
+    info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
+    Kino.JS.Live.new(__MODULE__, {type, info})
   end
 
   @impl true
-  def init(type, ctx) do
-    {:ok, assign(ctx, clients: [], type: type, jmuxer_ready: false)}
+  def init({type, info}, ctx) do
+    {:ok, assign(ctx, clients: [], type: type, jmuxer_ready: false, info: info)}
   end
 
   @impl true
@@ -112,6 +115,7 @@ defmodule Membrane.Kino.Player do
 
     info = %{
       type: ctx.assigns.type,
+      flush_time: ctx.assigns.info.flush_time,
       client_id: client_id
     }
 

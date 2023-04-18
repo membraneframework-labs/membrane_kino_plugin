@@ -2,19 +2,27 @@ defmodule Membrane.Kino.Input do
   use Kino.JS, assets_path: "lib/assets/audio_input"
   use Kino.JS.Live
 
-  def new() do
-    Kino.JS.Live.new(__MODULE__, nil)
+  alias Membrane.Time
+
+  def new(_type \\ :audio, opts \\ []) do
+    opts = Keyword.validate!(opts, flush_time: Time.milliseconds(1))
+
+    info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
+    Kino.JS.Live.new(__MODULE__, info)
+  end
+
+  @impl true
+  def init(info, ctx) do
+    {:ok, assign(ctx, info: info)}
   end
 
   @impl true
   def handle_connect(ctx) do
-    ctx =
-      assign(ctx,
-        client: nil
-      )
+    info = ctx.assigns.info
 
-    {:ok, ctx}
-    {:ok, nil, ctx}
+    ctx = assign(ctx, client: nil)
+
+    {:ok, info, ctx}
   end
 
   @impl true
