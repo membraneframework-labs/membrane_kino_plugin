@@ -14,7 +14,9 @@ Mix.install([
   {:membrane_wav_plugin, "~> 0.8.0"},
   {:membrane_generator_plugin, "~> 0.8.0"},
   {:membrane_raw_audio_format, "~> 0.10.0"},
-  {:membrane_matroska_plugin, "~> 0.2.1"}
+  {:membrane_matroska_plugin, "~> 0.2.1"},
+  {:membrane_portaudio_plugin, "~> 0.14.3"},
+  {:membrane_ffmpeg_swresample_plugin, "~> 0.16.1"}
 ])
 ```
 
@@ -29,7 +31,10 @@ alias Membrane.{
   File,
   AAC,
   WAV,
-  Matroska
+  Matroska,
+  Time,
+  PortAudio,
+  RawAudio
 }
 ```
 
@@ -82,30 +87,49 @@ end
 ```
 
 ```elixir
-kino_input = Membrane.Kino.Input.new()
-kino_player = Membrane.Kino.Player.new(:audio)
+kino_input =
+  Membrane.Kino.Input.new(
+    :audio,
+    flush_time: Time.milliseconds(1)
+  )
+
+kino_player =
+  Membrane.Kino.Player.new(
+    :audio,
+    flush_time: Time.milliseconds(500)
+  )
+
 :ok
 ```
 
 ```elixir
-aac_to_file =
-  child(:input, %Membrane.Kino.InputSourceBin{kino: kino_input})
-  |> child(:from_opus, Opus.Decoder)
-  |> child(:to_aac, AAC.FDK.Encoder)
-  |> child(:file, %File.Sink{location: "./tmp/test.aac"})
-
-play_audio =
+play_kino_audio =
   child(:input, %Membrane.Kino.InputSourceBin{kino: kino_input})
   |> child(:from_opus, Opus.Decoder)
   |> child(:to_aac, AAC.FDK.Encoder)
   |> via_in(:audio)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
-play_aac =
-  child(:input, %File.Source{location: "./tmp/test.aac"})
-  |> child(:parser, AAC.Parser)
-  |> via_in(:audio)
-  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+# save_aac =
+#   child(:input, %Membrane.Kino.InputSourceBin{kino: kino_input})
+#   |> child(:from_opus, Opus.Decoder)
+#   |> child(:to_aac, AAC.FDK.Encoder)
+#   |> child(:file, %File.Sink{location: "./tmp/test.aac"})
+
+# play_port_audio =
+#   child(:input, %Membrane.Kino.InputSourceBin{kino: kino_input})
+#   |> child(:from_opus, Opus.Decoder)
+#   |> child(:converter, %Membrane.FFmpeg.SWResample.Converter{
+#     input_stream_format: %RawAudio{channels: 1, sample_format: :s16le, sample_rate: 48_000},
+#     output_stream_format: %RawAudio{channels: 2, sample_format: :s16le, sample_rate: 48_000}
+#   })
+#   |> child(:player, %PortAudio.Sink{latency: :high})
+
+# play_aac =
+#   child(:input, %File.Source{location: "./tmp/test.aac"})
+#   |> child(:parser, AAC.Parser)
+#   |> via_in(:audio)
+#   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
 :ok
 ```
@@ -116,11 +140,7 @@ kino_player
 ```
 
 ```elixir
-structure = play_audio
+structure = play_kino_audio
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
-```
-
-```elixir
-Kino.Input.audio("")
 ```

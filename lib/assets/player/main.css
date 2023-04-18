@@ -3,10 +3,10 @@
   justify-content: center;
 }
 
-.frame-container {
+/* .frame-container {
   display: flex;
   width: 50%;
-}
+} */
 
 video {
   max-width: 100%;

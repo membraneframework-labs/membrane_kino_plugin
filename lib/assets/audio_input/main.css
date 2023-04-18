@@ -1,3 +1,14 @@
+.client {
+  display: flex;
+  justify-content: center;
+}
+
+/* .frame-container {
+  display: flex;
+  width: 50%;
+} */
+
+
 #record-button {
   display: inline-flex;
   align-items: center;
@@ -7,7 +18,7 @@
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.1s ease;
   position: relative;
 }
 
@@ -33,23 +44,37 @@
 #record-button .recording {
   background-color: #ff5252;
   color: #fff;
-  animation: pulse 1s infinite;
 }
 
 #record-button .recording .ri-mic-line {
   display: none;
 }
 
+#record-button .recording::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4);
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
   }
 
-  70% {
-    box-shadow: 0 0 0 10px rgba(255, 82, 82, 0);
+  50% {
+    opacity: 1;
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
   }
 }
