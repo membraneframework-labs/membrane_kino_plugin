@@ -1,4 +1,8 @@
 defmodule Membrane.Kino.Input do
+  defmodule InputError do
+    defexception [:message]
+  end
+
   use Kino.JS, assets_path: "lib/assets/audio_input"
   use Kino.JS.Live
 
@@ -46,6 +50,11 @@ defmodule Membrane.Kino.Input do
     end
 
     {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("error", error, _ctx) do
+    raise InputError, message: error
   end
 
   @impl true
