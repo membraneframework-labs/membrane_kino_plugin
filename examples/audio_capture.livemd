@@ -45,11 +45,11 @@ defmodule Membrane.Custom.Filter do
   alias Membrane.Buffer
 
   def_options(
-    fun: [
+    handle_process: [
       spec: (buffer :: %Buffer{} -> buffer :: %Buffer{}),
       default: &Function.identity/1
     ],
-    stream_format: [
+    handle_stream_format: [
       spec: (stream_format :: any() -> stream_format :: any()),
       default: &Function.identity/1
     ]
@@ -72,13 +72,13 @@ defmodule Membrane.Custom.Filter do
 
   @impl true
   def handle_stream_format(_pad, stream_format, _ctx, state) do
-    stream_format = state.stream_format.(stream_format)
+    stream_format = state.handle_stream_format.(stream_format)
     {[stream_format: {:output, stream_format}], state}
   end
 
   @impl true
   def handle_process(_pad, buffer, _context, state) do
-    buffer = state.fun.(buffer)
+    buffer = state.handle_process.(buffer)
     {[buffer: {:output, buffer}], state}
   end
 end
