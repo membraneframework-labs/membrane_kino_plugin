@@ -1,4 +1,8 @@
 defmodule Membrane.Kino.InputSource do
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
+
   use Membrane.Source
 
   alias Kino.JS.Live, as: KinoInput
@@ -26,8 +30,27 @@ defmodule Membrane.Kino.InputSource do
   end
 
   @impl true
+  def handle_setup(ctx, state) do
+    pid = self()
+
+    case KinoInput.call(state.kino, {:register, pid}) do
+      :ok ->
+        :ok
+
+      {:error, :already_registered} ->
+        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
+    end
+
+    Membrane.ResourceGuard.register(
+      ctx.resource_guard,
+      fn -> :ok = KinoInput.call(state.kino, {:unregister, pid}) end
+    )
+
+    {[], state}
+  end
+
+  @impl true
   def handle_playing(_ctx, state) do
-    :ok = KinoInput.call(state.kino, :register)
     {[stream_format: {:output, %RemoteStream{content_format: :WEBM, type: :bytestream}}], state}
   end
 

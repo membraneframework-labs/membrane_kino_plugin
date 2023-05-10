@@ -54,7 +54,8 @@ defmodule Membrane.Kino.Player do
 
   @impl true
   def init({type, info}, ctx) do
-    {:ok, assign(ctx, clients: [], type: type, jmuxer_ready: false, info: info)}
+    {:ok,
+     assign(ctx, clients: [], type: type, jmuxer_ready: false, info: info, created_from: nil)}
   end
 
   @impl true
@@ -64,11 +65,15 @@ defmodule Membrane.Kino.Player do
 
   @impl true
   def handle_call({:create, framerate}, from, ctx) do
-    payload = %{framerate: framerate}
+    if ctx.assigns.created_from do
+      {:reply, {:error, :already_created}, ctx}
+    else
+      payload = %{framerate: framerate}
 
-    broadcast_event(ctx, "create", payload)
+      broadcast_event(ctx, "create", payload)
 
-    {:noreply, assign(ctx, created_from: from)}
+      {:noreply, assign(ctx, created_from: from)}
+    end
   end
 
   @impl true

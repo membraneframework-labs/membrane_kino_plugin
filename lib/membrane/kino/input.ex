@@ -58,12 +58,24 @@ defmodule Membrane.Kino.Input do
   end
 
   @impl true
-  def handle_call(:register, {from, _alias}, ctx) do
-    {:reply, :ok, assign(ctx, client: from)}
+  def handle_call({:register, from}, _sender, ctx) do
+    if ctx.assigns.client do
+      {:reply, {:error, :already_registered}, ctx}
+    else
+      {:reply, :ok, assign(ctx, client: from)}
+    end
   end
 
-  @spec register(Kino.JS.Live.t(), pid()) :: :ok
-  def register(kino, from) do
-    Kino.JS.Live.cast(kino, {:register, from})
+  @impl true
+  def handle_call({:unregister, from}, _sender, ctx) do
+    if ctx.assigns.client == from do
+      {:reply, :ok, assign(ctx, client: nil)}
+    else
+      if ctx.assign.client == nil do
+        {:reply, :ok, ctx}
+      else
+        {:reply, {:error, :not_registered}, ctx}
+      end
+    end
   end
 end

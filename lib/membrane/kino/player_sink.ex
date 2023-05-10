@@ -69,6 +69,10 @@ defmodule Membrane.Kino.Player.Sink do
     end
   end
 
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
+
   use Membrane.Sink
 
   require Membrane.Logger
@@ -180,7 +184,14 @@ defmodule Membrane.Kino.Player.Sink do
     {num, den} = main_track.framerate
 
     framerate_float = num / den
-    {:ok, :player_created} = KinoPlayer.call(kino, {:create, framerate_float})
+
+    case KinoPlayer.call(kino, {:create, framerate_float}) do
+      {:ok, :player_created} ->
+        :ok
+
+      {:error, :already_created} ->
+        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
+    end
   end
 
   defp start_actions(tracks) do
