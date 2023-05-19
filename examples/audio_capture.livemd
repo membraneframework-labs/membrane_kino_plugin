@@ -24,7 +24,7 @@ Mix.install([
 
 ```elixir
 alias Membrane.RemoteControlled, as: RC
-import Membrane.ChildrenSpec, only: [{:child, 2}, {:child, 3}, {:via_in, 2}]
+import Membrane.ChildrenSpec
 
 alias Membrane.{
   Opus,
