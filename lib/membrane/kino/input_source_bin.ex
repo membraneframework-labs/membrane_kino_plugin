@@ -9,8 +9,8 @@ defmodule Membrane.Kino.InputSourceBin do
   }
 
   def_options kino: [
-                spec: Kino.JS.Live.t(),
-                description: "Kino.JS.Live handle"
+                spec: Membrane.Kino.Player.t(),
+                description: "Membrane.Kino.Player handle"
               ]
 
   def_output_pad :output,

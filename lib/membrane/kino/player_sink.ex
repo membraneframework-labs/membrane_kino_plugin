@@ -111,7 +111,6 @@ defmodule Membrane.Kino.Player.Sink do
     state = %{
       kino: kino,
       timer_started?: false,
-      index: 0,
       type: type,
       tracks: tracks
     }
@@ -209,11 +208,11 @@ defmodule Membrane.Kino.Player.Sink do
   def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
     buffer = Membrane.Payload.to_binary(payload)
 
-    info = %{index: state.index, type: pad}
+    info = %{type: pad}
 
     KinoPlayer.send_buffer(state.kino, buffer, info)
 
-    {[], %{state | index: state.index + 1}}
+    {[], state}
   end
 
   @impl true
@@ -227,7 +226,7 @@ defmodule Membrane.Kino.Player.Sink do
 
     state =
       if all_tracks_stopped?(tracks) do
-        %{state | timer_started?: false, index: 0}
+        %{state | timer_started?: false}
       else
         state
       end

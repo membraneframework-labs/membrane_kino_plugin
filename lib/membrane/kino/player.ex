@@ -65,7 +65,7 @@ defmodule Membrane.Kino.Player do
 
   It is required to create player before sending buffers to it.
   """
-  @spec create(t(), framerate: float()) :: {:ok, :player_created} | {:error, :already_created}
+  @spec create(t(), float()) :: {:ok, :player_created} | {:error, :already_created}
   def create(kino, framerate) do
     Kino.JS.Live.call(kino, {:create, framerate})
   end
