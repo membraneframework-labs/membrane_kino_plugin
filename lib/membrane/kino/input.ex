@@ -1,4 +1,28 @@
 defmodule Membrane.Kino.Input do
+  @moduledoc """
+  Kino component capable of capturing audio from the microphone (and camera video in the future).
+
+  Element provides synchronous API for sending frames to the different processes:
+  ```elixir
+  # upper cell
+  alias Membrane.Kino.Input, as: KinoInput
+  kino = KinoInput.new(:audio)
+
+  #lower cell
+
+  KinoInput.register(kino, self())
+  Enum.each(1..20, fn _ ->
+    receive do
+      {:audio_frame, info, binary} ->
+        IO.puts("Received audio frame with info: " <> inspect(info))
+    end
+  end)
+
+  KinoInput.unregister(kino, self())
+
+  ```
+  """
+
   defmodule InputError do
     defexception [:message]
   end
@@ -8,11 +32,37 @@ defmodule Membrane.Kino.Input do
 
   alias Membrane.Time
 
+  @type t() :: Kino.JS.Live.t()
+
+  @doc """
+  Creates a new Membrane.Kino.Input component. Returns a handle to the input.
+  Should be invoked at the end of the cell or explicitly rendered.
+  """
+  @spec new(:audio | :video | :both, flush_time: Time.t()) :: t()
   def new(_type \\ :audio, opts \\ []) do
     opts = Keyword.validate!(opts, flush_time: Time.milliseconds(1))
 
     info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
     Kino.JS.Live.new(__MODULE__, info)
+  end
+
+  @doc """
+  Registers a process to receive audio frames from the input. Process will receive
+  {:audio_frame, info, binary} messages.
+
+  Only one process can be registered at a time.
+  """
+  @spec register(t(), pid()) :: :ok | {:error, :already_registered}
+  def register(kino, registering_pid) do
+    Kino.JS.Live.call(kino, {:register, registering_pid})
+  end
+
+  @doc """
+  Unregisters a process from receiving audio frames from the input.
+  """
+  @spec unregister(t(), pid()) :: :ok | {:error, :not_registered}
+  def unregister(kino, unregistered_pid) do
+    Kino.JS.Live.call(kino, {:unregister, unregistered_pid})
   end
 
   @impl true

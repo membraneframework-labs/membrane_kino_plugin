@@ -5,18 +5,17 @@ defmodule Membrane.Kino.InputSource do
 
   use Membrane.Source
 
-  alias Kino.JS.Live, as: KinoInput
+  alias Membrane.Kino.Input, as: KinoInput
 
   alias Membrane.{
     RemoteStream,
-    Kino,
     Time,
     Buffer
   }
 
   def_options kino: [
-                spec: Kino.JS.Live.t(),
-                description: "Kino.JS.Live handle"
+                spec: KinoInput.t(),
+                description: "Membrane.Kino.Input.t() handle"
               ]
 
   def_output_pad :output,
@@ -33,7 +32,7 @@ defmodule Membrane.Kino.InputSource do
   def handle_setup(ctx, state) do
     pid = self()
 
-    case KinoInput.call(state.kino, {:register, pid}) do
+    case KinoInput.register(state.kino, pid) do
       :ok ->
         :ok
 
@@ -43,7 +42,7 @@ defmodule Membrane.Kino.InputSource do
 
     Membrane.ResourceGuard.register(
       ctx.resource_guard,
-      fn -> :ok = KinoInput.call(state.kino, {:unregister, pid}) end
+      fn -> :ok = KinoInput.unregister(state.kino, pid) end
     )
 
     {[], state}
