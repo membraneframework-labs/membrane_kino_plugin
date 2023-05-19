@@ -21,7 +21,6 @@ defmodule Membrane.DecodeMicrophoneTest do
   @tag :tmp_dir
   @tag timeout: :infinity
   test "Checks if audio and video are interleaved correctly", %{tmp_dir: tmp_dir} do
-    # Logger.configure(level: :error)
     output_file = Path.join(tmp_dir, "output.aac")
 
     structure =
