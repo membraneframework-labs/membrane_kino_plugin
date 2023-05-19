@@ -77,7 +77,7 @@ defmodule Membrane.Kino.Player.Sink do
 
   require Membrane.Logger
 
-  alias Kino.JS.Live, as: KinoPlayer
+  alias Membrane.Kino.Player, as: KinoPlayer
   alias Membrane.{AAC, Buffer, H264, Time}
 
   def_options kino: [
@@ -99,7 +99,7 @@ defmodule Membrane.Kino.Player.Sink do
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
     kino = options.kino
-    type = KinoPlayer.call(kino, :get_type)
+    type = KinoPlayer.get_type(kino)
 
     tracks =
       case type do
@@ -185,7 +185,7 @@ defmodule Membrane.Kino.Player.Sink do
 
     framerate_float = num / den
 
-    case KinoPlayer.call(kino, {:create, framerate_float}) do
+    case KinoPlayer.create(kino, framerate_float) do
       {:ok, :player_created} ->
         :ok
 
@@ -207,11 +207,11 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
-    payload = Membrane.Payload.to_binary(payload)
+    buffer = Membrane.Payload.to_binary(payload)
 
     info = %{index: state.index, type: pad}
 
-    KinoPlayer.cast(state.kino, {:buffer, payload, info})
+    KinoPlayer.send_buffer(state.kino, buffer, info)
 
     {[], %{state | index: state.index + 1}}
   end
