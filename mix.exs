@@ -38,8 +38,8 @@ defmodule Membrane.Kino.Mixfile do
   defp deps do
     [
       {:membrane_core, "~> 0.11.2"},
-      # {:kino, "~> 0.8.1"},
-      {:kino, github: "Janix4000/kino", branch: "fix-js-live-server-handle-call-noreply"},
+      {:kino, "~> 0.9.4"},
+      # {:kino, github: "Janix4000/kino", branch: "fix-js-live-server-handle-call-noreply"},
       {:membrane_h264_format, "~> 0.5.0"},
       {:membrane_aac_format, "~> 0.7.0"},
       {:membrane_opus_format, "~> 0.3.0"},
