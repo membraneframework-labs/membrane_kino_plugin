@@ -16,6 +16,7 @@ Mix.install([
 
 ```elixir
 kino = Membrane.Kino.Player.new(:audio)
+:ok
 ```
 
 ## Pipeline definition
@@ -45,6 +46,10 @@ structure =
 ```
 
 ## Playing pipeline
+
+```elixir
+kino
+```
 
 ```elixir
 pipeline = RC.Pipeline.start!()
