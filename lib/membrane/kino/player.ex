@@ -55,7 +55,15 @@ defmodule Membrane.Kino.Player do
   @impl true
   def init({type, info}, ctx) do
     {:ok,
-     assign(ctx, clients: [], type: type, jmuxer_ready: false, info: info, created_from: nil)}
+     assign(ctx,
+       clients: [],
+       type: type,
+       jmuxer_ready: false,
+       info: info,
+       created_from: nil,
+       initialized: false,
+       jmuxer_options: nil
+     )}
   end
 
   @impl true
@@ -70,9 +78,11 @@ defmodule Membrane.Kino.Player do
     else
       payload = %{framerate: framerate}
 
-      broadcast_event(ctx, "create", payload)
+      if ctx.assigns.initialized do
+        broadcast_event(ctx, "create", payload)
+      end
 
-      {:noreply, assign(ctx, created_from: from)}
+      {:noreply, assign(ctx, created_from: from, jmuxer_options: payload)}
     end
   end
 
@@ -96,6 +106,16 @@ defmodule Membrane.Kino.Player do
   def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
     payload = {:binary, info, buffer}
     send_payload(payload, ctx)
+  end
+
+  @impl true
+  def handle_event("initialized", _info, ctx) do
+    if ctx.assigns.created_from do
+      payload = ctx.assigns.jmuxer_options
+      broadcast_event(ctx, "create", payload)
+    end
+
+    {:noreply, assign(ctx, initialized: true)}
   end
 
   @impl true

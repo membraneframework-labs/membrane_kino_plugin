@@ -17,14 +17,12 @@ defmodule Membrane.Kino.Input do
 
   @impl true
   def init(info, ctx) do
-    {:ok, assign(ctx, info: info)}
+    {:ok, assign(ctx, info: info, client: nil)}
   end
 
   @impl true
   def handle_connect(ctx) do
     info = ctx.assigns.info
-
-    ctx = assign(ctx, client: nil)
 
     {:ok, info, ctx}
   end
