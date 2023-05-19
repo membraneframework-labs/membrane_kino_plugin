@@ -45,7 +45,7 @@ defmodule Membrane.Kino.Player do
   Should be invoked at the end of the cell or explicitly rendered.
   """
   @spec new(:video | :audio | :both, flush_time: Time.t()) :: t()
-  def new(type \\ :video, opts \\ []) do
+  def new(type, opts \\ []) do
     opts = Keyword.validate!(opts, flush_time: Time.milliseconds(0))
 
     info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
