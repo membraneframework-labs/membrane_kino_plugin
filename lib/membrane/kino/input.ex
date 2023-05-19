@@ -69,7 +69,7 @@ defmodule Membrane.Kino.Input do
     if ctx.assigns.client == from do
       {:reply, :ok, assign(ctx, client: nil)}
     else
-      if ctx.assign.client == nil do
+      if ctx.assigns.client == nil do
         {:reply, :ok, ctx}
       else
         {:reply, {:error, :not_registered}, ctx}
