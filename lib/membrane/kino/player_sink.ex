@@ -8,7 +8,7 @@ defmodule Membrane.Kino.Player.Sink do
   ## Example
   ``` elixir
   # upper cell
-  kino = Membrane.Kino.Player.new(:video)
+  kino = Membrane.Kino.Player.new(video: true)
 
   # lower cell
   import Membrane.ChildrenSpec

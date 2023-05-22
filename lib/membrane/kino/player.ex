@@ -6,7 +6,7 @@ defmodule Membrane.Kino.Player do
   ```elixir
   # upper cell
   alias Membrane.Kino.Player, as: KinoPlayer
-  kino = KinoPlayer.new(:video)
+  kino = KinoPlayer.new(video: true)
 
   #lower cell
   framerate = 30
@@ -43,10 +43,20 @@ defmodule Membrane.Kino.Player do
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
+
+  At least one of the `:video` or `:audio` options should be set to `true`.
   """
-  @spec new(:video | :audio | :both, flush_time: Time.t()) :: t()
-  def new(type, opts \\ []) do
-    opts = Keyword.validate!(opts, flush_time: Time.milliseconds(0))
+  @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
+  def new(opts) do
+    opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(0))
+
+    type =
+      case {opts[:video], opts[:audio]} do
+        {true, true} -> :both
+        {true, false} -> :video
+        {false, true} -> :audio
+        _ -> raise ArgumentError, "At least one of :video or :audio should be true"
+      end
 
     info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
     Kino.JS.Live.new(__MODULE__, {type, info})

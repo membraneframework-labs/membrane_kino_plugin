@@ -38,11 +38,23 @@ defmodule Membrane.Kino.Input do
   Creates a new Membrane.Kino.Input component. Returns a handle to the input.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  @spec new(:audio | :video | :both, flush_time: Time.t()) :: t()
-  def new(_type \\ :audio, opts \\ []) do
-    opts = Keyword.validate!(opts, flush_time: Time.milliseconds(1))
+  @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
+  def new(opts) do
+    opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(1))
 
-    info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
+    type =
+      case {opts[:video], opts[:audio]} do
+        {true, true} -> :both
+        {true, false} -> :video
+        {false, true} -> :audio
+        _ -> raise ArgumentError, "At least one of :video or :audio should be true"
+      end
+
+    info =
+      Map.new(opts)
+      |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
+      |> Map.put(:type, type)
+
     Kino.JS.Live.new(__MODULE__, info)
   end
 

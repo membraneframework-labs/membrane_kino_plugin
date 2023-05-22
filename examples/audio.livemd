@@ -15,7 +15,7 @@ Mix.install([
 ## Kino Player
 
 ```elixir
-kino = Membrane.Kino.Player.new(:audio)
+kino = Membrane.Kino.Player.new(audio: true)
 :ok
 ```
 

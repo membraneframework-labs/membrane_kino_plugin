@@ -41,13 +41,13 @@ alias Membrane.{
 ```elixir
 kino_input =
   Membrane.Kino.Input.new(
-    :audio,
+    audio: true,
     flush_time: Time.milliseconds(1)
   )
 
 kino_player =
   Membrane.Kino.Player.new(
-    :audio,
+    audio: true,
     flush_time: Time.milliseconds(500)
   )
 
