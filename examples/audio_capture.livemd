@@ -36,54 +36,6 @@ alias Membrane.{
 ```
 
 ```elixir
-defmodule Membrane.Custom.Filter do
-  use Membrane.Filter
-
-  alias Membrane.Buffer
-
-  def_options(
-    handle_process: [
-      spec: (buffer :: %Buffer{} -> buffer :: %Buffer{}),
-      default: &Function.identity/1
-    ],
-    handle_stream_format: [
-      spec: (stream_format :: any() -> stream_format :: any()),
-      default: &Function.identity/1
-    ]
-  )
-
-  def_input_pad(:input,
-    accepted_format: _any,
-    demand_mode: :auto
-  )
-
-  def_output_pad(:output,
-    accepted_format: _any,
-    demand_mode: :auto
-  )
-
-  @impl true
-  def handle_init(_ctx, options) do
-    {[], options}
-  end
-
-  @impl true
-  def handle_stream_format(_pad, stream_format, _ctx, state) do
-    stream_format = state.handle_stream_format.(stream_format)
-    {[stream_format: {:output, stream_format}], state}
-  end
-
-  @impl true
-  def handle_process(_pad, buffer, _context, state) do
-    buffer = state.handle_process.(buffer)
-    {[buffer: {:output, buffer}], state}
-  end
-end
-
-:ok
-```
-
-```elixir
 kino_input =
   Membrane.Kino.Input.new(
     audio: true,
