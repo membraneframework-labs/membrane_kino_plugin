@@ -23,7 +23,8 @@ defmodule Membrane.Kino.Input.Source.Raw do
 
   def_options kino: [
                 spec: KinoInput.t(),
-                description: "Membrane.Kino.Input.t() handle"
+                description: "Membrane.Kino.Input.t() handle",
+                default: nil
               ]
 
   def_output_pad :output,
@@ -33,7 +34,16 @@ defmodule Membrane.Kino.Input.Source.Raw do
 
   @impl true
   def handle_init(_ctx, options) do
-    {[], %{kino: options.kino}}
+    kino =
+      if options.kino do
+        options.kino
+      else
+        kino = KinoInput.new(audio: true, video: true)
+        Kino.render(kino)
+        kino
+      end
+
+    {[], %{kino: kino}}
   end
 
   @impl true

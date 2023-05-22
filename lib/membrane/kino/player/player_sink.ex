@@ -5,6 +5,8 @@ defmodule Membrane.Kino.Player.Sink do
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Player` element into the Membrane pipeline and shows video in livebook's cells.
 
+  Kino player will be automatically created if not given.
+
   ## Example
   ``` elixir
   # upper cell
@@ -82,8 +84,8 @@ defmodule Membrane.Kino.Player.Sink do
 
   def_options kino: [
                 spec: KinoPlayer.t(),
-                description:
-                  "Kino element handle. It should be initialized before the pipeline is started."
+                description: "Kino element handle. If not given, new input will be created..",
+                default: nil
               ]
 
   def_input_pad :audio,
@@ -98,7 +100,15 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
-    kino = options.kino
+    kino =
+      if options.kino do
+        options.kino
+      else
+        kino = KinoPlayer.new(video: true, audio: true)
+        Kino.render(kino)
+        kino
+      end
+
     type = KinoPlayer.get_type(kino)
 
     tracks =

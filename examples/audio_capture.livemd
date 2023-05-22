@@ -96,10 +96,6 @@ kino_player =
     flush_time: Time.milliseconds(500)
   )
 
-:ok
-```
-
-```elixir
 play_kino_audio =
   child(:input, %Membrane.Kino.Input.Source{kino: kino_input})
   |> child(:from_opus, Opus.Decoder)
@@ -111,12 +107,10 @@ play_kino_audio =
 ```
 
 ```elixir
-kino_input |> Kino.render()
-kino_player
-```
-
-```elixir
 structure = play_kino_audio
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+
+kino_input |> Kino.render()
+kino_player
 ```

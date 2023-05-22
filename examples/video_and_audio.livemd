@@ -17,11 +17,6 @@ Mix.install([
 ## Section
 
 ```elixir
-kino = Membrane.Kino.Player.new(video: true, audio: true)
-:ok
-```
-
-```elixir
 import Membrane.ChildrenSpec
 
 alias Membrane.{
@@ -46,14 +41,10 @@ structure = [
   |> child({:parser, :aac}, AAC.Parser)
   |> via_in(:audio)
   |> get_child(:video_player),
-  child(:video_player, %Kino.Player.Sink{kino: kino})
+  child(:video_player, Kino.Player.Sink)
 ]
 
 :ok
-```
-
-```elixir
-kino
 ```
 
 ```elixir
