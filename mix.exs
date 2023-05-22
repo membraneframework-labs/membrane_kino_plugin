@@ -1,7 +1,7 @@
 defmodule Membrane.Kino.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @github_url "https://github.com/membraneframework/membrane_kino_plugin"
 
   def project do
@@ -39,7 +39,6 @@ defmodule Membrane.Kino.Mixfile do
     [
       {:membrane_core, "~> 0.11.2"},
       {:kino, "~> 0.9.4"},
-      # {:kino, github: "Janix4000/kino", branch: "fix-js-live-server-handle-call-noreply"},
       {:membrane_h264_format, "~> 0.5.0"},
       {:membrane_aac_format, "~> 0.7.0"},
       {:membrane_opus_format, "~> 0.3.0"},
@@ -51,7 +50,6 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_raw_video_format, "~> 0.2", only: :test},
       {:membrane_opus_plugin, "~> 0.16.0", only: :test},
       {:membrane_aac_fdk_plugin, "~> 0.14.0", only: :test},
-      # {:membrane_matroska_plugin, "~> 0.2.0", only: :test},
       {:membrane_matroska_plugin,
        github: "membraneframework/membrane_matroska_plugin",
        branch: "fix_float_parsing",
