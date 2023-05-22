@@ -1,4 +1,4 @@
-defmodule Membrane.Kino.Input.Source.Raw do
+defmodule Membrane.Kino.Input.Source.RemoteStream do
   @moduledoc """
   This module provides a audio microphone (and video camera in the future) input source
   compatible with the Livebook environment. This module returns raw audio data in WEBM format.

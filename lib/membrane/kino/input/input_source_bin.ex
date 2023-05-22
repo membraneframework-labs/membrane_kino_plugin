@@ -61,7 +61,7 @@ defmodule Membrane.Kino.Input.Source do
   @impl true
   def handle_init(_ctx, options) do
     structure = [
-      child(:source, %Kino.Input.Source.Raw{kino: options.kino})
+      child(:source, %Kino.Input.Source.RemoteStream{kino: options.kino})
       |> child(:demuxer, Matroska.Demuxer),
       child(:funnel, Funnel) |> bin_output()
     ]
