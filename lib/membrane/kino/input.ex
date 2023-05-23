@@ -6,7 +6,7 @@ defmodule Membrane.Kino.Input do
   ```elixir
   # upper cell
   alias Membrane.Kino.Input, as: KinoInput
-  kino = KinoInput.new(:audio)
+  kino = KinoInput.new(audio: true)
 
   #lower cell
 
@@ -38,7 +38,7 @@ defmodule Membrane.Kino.Input do
   Creates a new Membrane.Kino.Input component. Returns a handle to the input.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
+  @spec new(audio: boolean(), flush_time: Time.t()) :: t()
   def new(opts) do
     opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(1))
 
