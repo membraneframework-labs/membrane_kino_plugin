@@ -101,11 +101,13 @@ defmodule Membrane.Kino.Player.Sink do
     type = KinoPlayer.get_type(kino)
 
     tracks =
-      case type do
-        :video -> %{video: Track.new()}
-        :audio -> %{audio: Track.new()}
-        :both -> %{video: Track.new(), audio: Track.new()}
-      end
+      Enum.reduce(type, %{}, fn {type, exist}, acc ->
+        if exist do
+          Map.put(acc, type, Track.new())
+        else
+          acc
+        end
+      end)
 
     state = %{
       kino: kino,
@@ -119,7 +121,7 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_pad_added(Pad.ref(pad, _id), _ctx, state) do
-    if not Map.has_key?(state.tracks, pad) do
+    if not state.type[pad] do
       raise "Unexpected pad #{inspect(pad)} for a player type #{inspect(state.type)} added."
     end
 
@@ -207,7 +209,8 @@ defmodule Membrane.Kino.Player.Sink do
   def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
     buffer = Membrane.Payload.to_binary(payload)
 
-    info = %{type: pad}
+    buffer = %{pad => buffer}
+    info = %{}
 
     KinoPlayer.send_buffer(state.kino, buffer, info)
 

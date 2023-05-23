@@ -42,20 +42,16 @@ defmodule Membrane.Kino.Input do
   def new(opts) do
     opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(1))
 
-    type =
-      case {opts[:video], opts[:audio]} do
-        {true, true} -> :both
-        {true, false} -> :video
-        {false, true} -> :audio
-        _ -> raise ArgumentError, "At least one of :video or :audio should be true"
-      end
+    if not (opts[:video] or opts[:audio]) do
+      raise ArgumentError, "At least one of :video or :audio should be true"
+    end
 
-    info =
-      Map.new(opts)
-      |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
-      |> Map.put(:type, type)
-      |> Map.put(:client, nil)
-      |> Map.put(:client_ref, nil)
+    type = Keyword.take(opts, [:video, :audio]) |> Map.new()
+
+    info = %{
+      type: type,
+      flush_time: Time.round_to_milliseconds(opts[:flush_time])
+    }
 
     Kino.JS.Live.new(__MODULE__, info)
   end
@@ -81,7 +77,7 @@ defmodule Membrane.Kino.Input do
 
   @impl true
   def init(info, ctx) do
-    {:ok, assign(ctx, info: info, client: nil)}
+    {:ok, assign(ctx, info: info, client: nil, client_ref: nil)}
   end
 
   @impl true

@@ -37,8 +37,8 @@ defmodule Membrane.Kino.Player do
 
   @type t() :: Kino.JS.Live.t()
 
-  @type buffer_t() :: binary() | %{video: binary(), audio: binary()}
-  @type buffer_info_t() :: %{type: :video | :audio | :both}
+  @type buffer_t() :: %{optional(:video) => binary() | nil, optional(:audio) => binary() | nil}
+  @type buffer_info_t() :: %{}
 
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
@@ -50,16 +50,18 @@ defmodule Membrane.Kino.Player do
   def new(opts) do
     opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(0))
 
-    type =
-      case {opts[:video], opts[:audio]} do
-        {true, true} -> :both
-        {true, false} -> :video
-        {false, true} -> :audio
-        _ -> raise ArgumentError, "At least one of :video or :audio should be true"
-      end
+    type = Keyword.take(opts, [:video, :audio])
 
-    info = Map.new(opts) |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
-    Kino.JS.Live.new(__MODULE__, {type, info})
+    if not (opts[:video] or opts[:audio]) do
+      raise ArgumentError, "At least one of :video or :audio should be true"
+    end
+
+    info = %{
+      type: type,
+      flush_time: Time.round_to_milliseconds(opts[:flush_time])
+    }
+
+    Kino.JS.Live.new(__MODULE__, info)
   end
 
   @doc """
@@ -83,8 +85,7 @@ defmodule Membrane.Kino.Player do
   @doc """
   Sends a buffer to the player.
 
-  Buffer should be a binary or a map with :video and :audio keys.
-  Field `info` should specify the type of the buffer.
+  Buffer should be a map with :video and :audio keys with binary payloads.
 
   It is required to create player before sending buffers to it.
   See `create/2` function.
@@ -95,11 +96,10 @@ defmodule Membrane.Kino.Player do
   end
 
   @impl true
-  def init({type, info}, ctx) do
+  def init(info, ctx) do
     {:ok,
      assign(ctx,
        clients: [],
-       type: type,
        jmuxer_ready: false,
        info: info,
        created_from: nil,
@@ -110,7 +110,7 @@ defmodule Membrane.Kino.Player do
 
   @impl true
   def handle_call(:get_type, _from, ctx) do
-    {:reply, ctx.assigns.type, ctx}
+    {:reply, ctx.assigns.info.type, ctx}
   end
 
   @impl true
@@ -129,24 +129,24 @@ defmodule Membrane.Kino.Player do
   end
 
   @impl true
-  def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
-      when ctx.assigns.type == :both do
+  def handle_cast({:buffer, buffers, info}, ctx) do
+    type = ctx.assigns.info.type
+
+    if buffers[:video] && not type[:video] do
+      raise JMuxerError,
+        message: "Player was created without video support, video buffer provided"
+    end
+
+    if buffers[:audio] && not type[:audio] do
+      raise JMuxerError,
+        message: "Player was created without audio support, audio buffer provided"
+    end
+
+    video = Map.get(buffers, :video) || <<>>
+    audio = Map.get(buffers, :audio) || <<>>
+
     info = info |> Map.put(:video_size, byte_size(video)) |> Map.put_new(:type, :both)
     payload = {:binary, info, video <> audio}
-    send_payload(payload, ctx)
-  end
-
-  @impl true
-  def handle_cast({:buffer, buffer, %{type: type} = info}, ctx)
-      when type in [:audio, :video] and
-             ctx.assigns.type == :both do
-    payload = {:binary, info, buffer}
-    send_payload(payload, ctx)
-  end
-
-  @impl true
-  def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
-    payload = {:binary, info, buffer}
     send_payload(payload, ctx)
   end
 
@@ -180,13 +180,16 @@ defmodule Membrane.Kino.Player do
   def handle_connect(ctx) do
     client_id = random_id()
 
-    info = %{
-      type: ctx.assigns.type,
-      flush_time: ctx.assigns.info.flush_time,
-      client_id: client_id
-    }
+    info =
+      ctx.assigns.info
+      |> Map.update!(:type, &type_to_strings/1)
+      |> Map.put(:client_id, client_id)
 
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
+  end
+
+  defp type_to_strings(type) do
+    Enum.map(type, fn {key, val} -> {key, Atom.to_string(val)} end) |> Map.new()
   end
 
   defp random_id() do
