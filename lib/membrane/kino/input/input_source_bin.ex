@@ -6,12 +6,10 @@ defmodule Membrane.Kino.Input.Source do
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
 
-  Kino player will be automatically created if not given.
-
   ## Example
   ``` elixir
   # upper cell
-  kino = Membrane.Kino.Input.new(video: true)
+  kino = Membrane.Kino.Input.new(audio: true)
 
   # lower cell
   import Membrane.ChildrenSpec
@@ -48,9 +46,7 @@ defmodule Membrane.Kino.Input.Source do
 
   def_options kino: [
                 spec: Membrane.Kino.Input.t(),
-                description:
-                  "Membrane.Kino.Player handle. If not given, new input will be created.",
-                default: nil
+                description: "Membrane.Kino.Player handle."
               ]
 
   def_output_pad :output,

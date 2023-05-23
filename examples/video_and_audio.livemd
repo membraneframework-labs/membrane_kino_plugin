@@ -32,6 +32,8 @@ alias Membrane.RemoteControlled, as: RC
 video_filepath = "./res/input_baseline.h264"
 audio_filepath = "./res/input.aac"
 
+kino = Kino.Input.new(video: true, audio: true)
+
 structure = [
   child({:file_input, :h264}, %File.Source{location: video_filepath})
   |> child({:parser, :h264}, %H264_Parser{framerate: {60, 1}})
@@ -41,7 +43,7 @@ structure = [
   |> child({:parser, :aac}, AAC.Parser)
   |> via_in(:audio)
   |> get_child(:video_player),
-  child(:video_player, Kino.Player.Sink)
+  child(:video_player, %Kino.Player.Sink{kino: kino})
 ]
 
 :ok

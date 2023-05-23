@@ -23,8 +23,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   def_options kino: [
                 spec: KinoInput.t(),
-                description: "Membrane.Kino.Input.t() handle",
-                default: nil
+                description: "Membrane.Kino.Input.t() handle"
               ]
 
   def_output_pad :output,
@@ -34,16 +33,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   @impl true
   def handle_init(_ctx, options) do
-    kino =
-      if options.kino do
-        options.kino
-      else
-        kino = KinoInput.new(audio: true, video: true)
-        Kino.render(kino)
-        kino
-      end
-
-    {[], %{kino: kino}}
+    {[], %{kino: options.kino}}
   end
 
   @impl true
