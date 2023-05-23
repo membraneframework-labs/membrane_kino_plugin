@@ -54,6 +54,8 @@ defmodule Membrane.Kino.Input do
       Map.new(opts)
       |> Map.update!(:flush_time, &Time.round_to_milliseconds/1)
       |> Map.put(:type, type)
+      |> Map.put(:client, nil)
+      |> Map.put(:client_ref, nil)
 
     Kino.JS.Live.new(__MODULE__, info)
   end
@@ -122,20 +124,38 @@ defmodule Membrane.Kino.Input do
     if ctx.assigns.client do
       {:reply, {:error, :already_registered}, ctx}
     else
-      {:reply, :ok, assign(ctx, client: from)}
+      ref = Process.monitor(from)
+      {:reply, :ok, assign(ctx, client: from, client_ref: ref)}
     end
   end
 
   @impl true
   def handle_call({:unregister, from}, _sender, ctx) do
-    if ctx.assigns.client == from do
-      {:reply, :ok, assign(ctx, client: nil)}
-    else
-      if ctx.assigns.client == nil do
+    case unregister_listener(from, ctx) do
+      {:ok, ctx} ->
         {:reply, :ok, ctx}
-      else
+
+      {:error, :not_registered} ->
         {:reply, {:error, :not_registered}, ctx}
-      end
+    end
+  end
+
+  defp unregister_listener(from, ctx) do
+    if ctx.assigns.client in [from, nil] do
+      {:ok, assign(ctx, client: nil)}
+    else
+      {:error, :not_registered}
+    end
+  end
+
+  @impl true
+  def handle_info({:DOWN, ref, :process, pid, _reason}, ctx) when ctx.assigns.client_ref == ref do
+    case unregister_listener(pid, ctx) do
+      {:ok, ctx} ->
+        {:noreply, ctx}
+
+      {:error, :not_registered} ->
+        raise InputError, message: "Unexpected DOWN message"
     end
   end
 end

@@ -63,6 +63,6 @@ structure = play_kino_audio
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
 
-kino_input |> Kino.render()
+Kino.render(kino_input)
 kino_player
 ```
