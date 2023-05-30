@@ -12,15 +12,7 @@ Mix.install([
 ])
 ```
 
-## Kino Player
-
-```elixir
-kino = Membrane.Kino.Player.new(:video)
-```
-
-## Pipeline definition
-
-Input video is loaded from the file and directly played using `Kino.Video` sink/player.
+## Playing pipeline
 
 ```elixir
 import Membrane.ChildrenSpec
@@ -34,10 +26,11 @@ alias Membrane.{
 alias Membrane.H264.FFmpeg.Parser
 alias Membrane.RemoteControlled, as: RC
 
-input_filepath = "./res/input.h264"
+video_filepath = "./res/input_baseline.h264"
+kino = Membrane.Kino.Player.new(video: true)
 
 structure =
-  child(:file_input, %File.Source{location: input_filepath})
+  child(:file_input, %File.Source{location: video_filepath})
   |> child(:parser, %Parser{framerate: {60, 1}})
   |> via_in(:video)
   |> child(:video_player, %Kino.Player.Sink{kino: kino})
@@ -45,9 +38,8 @@ structure =
 :ok
 ```
 
-## Playing pipeline
-
 ```elixir
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+kino
 ```

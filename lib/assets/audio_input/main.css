@@ -1,0 +1,80 @@
+.client {
+  display: flex;
+  justify-content: center;
+}
+
+/* .frame-container {
+  display: flex;
+  width: 50%;
+} */
+
+
+#record-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #f8f8f8;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  position: relative;
+}
+
+#record-button:hover {
+  background-color: #e0e0e0;
+}
+
+#record-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+#record-button .ri-mic-line {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+#record-button span {
+  font-size: 1rem;
+  color: #666;
+}
+
+#record-button .recording {
+  background-color: #ff5252;
+  color: #fff;
+}
+
+#record-button .recording .ri-mic-line {
+  display: none;
+}
+
+#record-button .recording::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}

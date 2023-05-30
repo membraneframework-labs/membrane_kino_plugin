@@ -12,12 +12,6 @@ Mix.install([
 ])
 ```
 
-## Kino Player
-
-```elixir
-kino = Membrane.Kino.Player.new(:audio)
-```
-
 ## Pipeline definition
 
 Input video is loaded from the file and directly played using `Kino.Video` sink/player.
@@ -34,6 +28,7 @@ alias Membrane.AAC.Parser
 alias Membrane.RemoteControlled, as: RC
 
 input_filepath = "./res/input.aac"
+kino = Membrane.Kino.Player.new(audio: true)
 
 structure =
   child(:file_input, %File.Source{location: input_filepath})
@@ -49,4 +44,5 @@ structure =
 ```elixir
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+kino
 ```

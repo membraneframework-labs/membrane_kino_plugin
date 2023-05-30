@@ -5,18 +5,17 @@ defmodule Membrane.Kino.Player do
   Element provides asynchronous API for sending frames to the player:
   ```elixir
   # upper cell
-  kino = Membrane.Kino.Player.new(:video)
+  alias Membrane.Kino.Player, as: KinoPlayer
+  kino = KinoPlayer.new(video: true)
 
   #lower cell
-  alias = Kino.JS.Live, as: KinoPlayer
-
   framerate = 30
 
-  KinoPlayer.call(kino, {:create, framerate})
+  KinoPlayer.create(kino, framerate)
 
   Enum.each(generate_h264_frames(),
   fn frame ->
-    KinoPlayer.cast(kino, {:buffer, frame, %{}})
+    KinoPlayer.send_buffer(kino, frame, %{type: :video})
     Process.sleep(round(1000 / framerate)))
   end
   )
@@ -34,65 +33,136 @@ defmodule Membrane.Kino.Player do
   use Kino.JS, assets_path: "lib/assets/player"
   use Kino.JS.Live
 
+  alias Membrane.Time
+
   @type t() :: Kino.JS.Live.t()
 
-  @type player_type_t :: :video | :audio | :both
-
-  @jmuxer_check_interval_ms 1000
+  @type buffer_t() :: %{optional(:video) => binary() | nil, optional(:audio) => binary() | nil}
+  @type buffer_info_t() :: %{}
 
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
   Should be invoked at the end of the cell or explicitly rendered.
+
+  At least one of the `:video` or `:audio` options should be set to `true`.
   """
-  @spec new(player_type_t, []) :: t()
-  def new(type \\ :video, _opts \\ []) do
-    Kino.JS.Live.new(__MODULE__, type)
+  @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
+  def new(opts) do
+    opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(0))
+
+    type = Keyword.take(opts, [:video, :audio])
+
+    if not (opts[:video] or opts[:audio]) do
+      raise ArgumentError, "At least one of :video or :audio should be true"
+    end
+
+    info = %{
+      type: type,
+      flush_time: Time.round_to_milliseconds(opts[:flush_time])
+    }
+
+    Kino.JS.Live.new(__MODULE__, info)
+  end
+
+  @doc """
+  Gets the type of the player.
+  """
+  @spec get_type(t()) :: :video | :audio | :both
+  def get_type(kino) do
+    Kino.JS.Live.call(kino, :get_type)
+  end
+
+  @doc """
+  Creates a player with the given framerate.
+
+  It is required to create player before sending buffers to it.
+  """
+  @spec create(t(), float()) :: {:ok, :player_created} | {:error, :already_created}
+  def create(kino, framerate) do
+    Kino.JS.Live.call(kino, {:create, framerate})
+  end
+
+  @doc """
+  Sends a buffer to the player.
+
+  Buffer should be a map with :video and :audio keys with binary payloads.
+
+  It is required to create player before sending buffers to it.
+  See `create/2` function.
+  """
+  @spec send_buffer(t(), buffer_t(), buffer_info_t()) :: :ok
+  def send_buffer(kino, buffer, info) do
+    Kino.JS.Live.cast(kino, {:buffer, buffer, info})
   end
 
   @impl true
-  def init(type, ctx) do
-    {:ok, assign(ctx, clients: [], type: type, jmuxer_ready: false)}
+  def init(info, ctx) do
+    {:ok,
+     assign(ctx,
+       clients: [],
+       jmuxer_ready: false,
+       info: info,
+       created_from: nil,
+       initialized: false,
+       jmuxer_options: nil
+     )}
   end
 
   @impl true
   def handle_call(:get_type, _from, ctx) do
-    {:reply, ctx.assigns.type, ctx}
+    {:reply, ctx.assigns.info.type, ctx}
   end
 
   @impl true
   def handle_call({:create, framerate}, from, ctx) do
-    payload = %{framerate: framerate}
+    if ctx.assigns.created_from do
+      {:reply, {:error, :already_created}, ctx}
+    else
+      payload = %{framerate: framerate}
 
-    broadcast_event(ctx, "create", payload)
+      if ctx.assigns.initialized do
+        broadcast_event(ctx, "create", payload)
+      end
 
-    {:noreply, assign(ctx, create_from: from)}
+      {:noreply, assign(ctx, created_from: from, jmuxer_options: payload)}
+    end
   end
 
   @impl true
-  def handle_cast({:buffer, %{video: video, audio: audio}, info}, ctx)
-      when ctx.assigns.type == :both do
-    info = info |> Map.put(:video_size, byte_size(video)) |> Map.put_new(:type, :both)
+  def handle_cast({:buffer, buffers, info}, ctx) do
+    type = ctx.assigns.info.type
+
+    if buffers[:video] && not type[:video] do
+      raise JMuxerError,
+        message: "Player was created without video support, video buffer provided"
+    end
+
+    if buffers[:audio] && not type[:audio] do
+      raise JMuxerError,
+        message: "Player was created without audio support, audio buffer provided"
+    end
+
+    video = Map.get(buffers, :video, <<>>)
+    audio = Map.get(buffers, :audio, <<>>)
+
+    info = info |> Map.put(:video_size, byte_size(video))
     payload = {:binary, info, video <> audio}
     send_payload(payload, ctx)
   end
 
   @impl true
-  def handle_cast({:buffer, buffer, %{type: type} = info}, ctx)
-      when type in [:audio, :video] and
-             ctx.assigns.type == :both do
-    payload = {:binary, info, buffer}
-    send_payload(payload, ctx)
-  end
+  def handle_event("initialized", _info, ctx) do
+    if ctx.assigns.created_from do
+      payload = ctx.assigns.jmuxer_options
+      broadcast_event(ctx, "create", payload)
+    end
 
-  @impl true
-  def handle_cast({:buffer, buffer, info}, ctx) when ctx.assigns.type in [:audio, :video] do
-    payload = {:binary, info, buffer}
-    send_payload(payload, ctx)
+    {:noreply, assign(ctx, initialized: true)}
   end
 
   @impl true
   def handle_event("jmuxer_ready", _info, ctx) do
-    GenServer.reply(ctx.assigns.create_from, {:ok, :player_created})
+    GenServer.reply(ctx.assigns.created_from, {:ok, :player_created})
     {:noreply, assign(ctx, jmuxer_ready: true)}
   end
 
@@ -110,12 +180,16 @@ defmodule Membrane.Kino.Player do
   def handle_connect(ctx) do
     client_id = random_id()
 
-    info = %{
-      type: ctx.assigns.type,
-      client_id: client_id
-    }
+    info =
+      ctx.assigns.info
+      |> Map.update!(:type, &type_to_strings/1)
+      |> Map.put(:client_id, client_id)
 
     {:ok, info, update(ctx, :clients, &(&1 ++ [client_id]))}
+  end
+
+  defp type_to_strings(type) do
+    Enum.map(type, fn {key, val} -> {key, Atom.to_string(val)} end) |> Map.new()
   end
 
   defp random_id() do

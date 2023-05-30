@@ -8,7 +8,7 @@ defmodule Membrane.Kino.Player.Sink do
   ## Example
   ``` elixir
   # upper cell
-  kino = Membrane.Kino.Player.new(:video)
+  kino = Membrane.Kino.Player.new(video: true)
 
   # lower cell
   import Membrane.ChildrenSpec
@@ -69,17 +69,20 @@ defmodule Membrane.Kino.Player.Sink do
     end
   end
 
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
+
   use Membrane.Sink
 
   require Membrane.Logger
 
-  alias Kino.JS.Live, as: KinoPlayer
+  alias Membrane.Kino.Player, as: KinoPlayer
   alias Membrane.{AAC, Buffer, H264, Time}
 
   def_options kino: [
                 spec: KinoPlayer.t(),
-                description:
-                  "Kino element handle. It should be initialized before the pipeline is started."
+                description: "Kino element handle."
               ]
 
   def_input_pad :audio,
@@ -95,19 +98,20 @@ defmodule Membrane.Kino.Player.Sink do
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
     kino = options.kino
-    type = KinoPlayer.call(kino, :get_type)
+    type = KinoPlayer.get_type(kino)
 
     tracks =
-      case type do
-        :video -> %{video: Track.new()}
-        :audio -> %{audio: Track.new()}
-        :both -> %{video: Track.new(), audio: Track.new()}
-      end
+      Enum.reduce(type, %{}, fn {type, exists?}, acc ->
+        if exists? do
+          Map.put(acc, type, Track.new())
+        else
+          acc
+        end
+      end)
 
     state = %{
       kino: kino,
       timer_started?: false,
-      index: 0,
       type: type,
       tracks: tracks
     }
@@ -117,7 +121,7 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_pad_added(Pad.ref(pad, _id), _ctx, state) do
-    if not Map.has_key?(state.tracks, pad) do
+    if not state.type[pad] do
       raise "Unexpected pad #{inspect(pad)} for a player type #{inspect(state.type)} added."
     end
 
@@ -180,7 +184,14 @@ defmodule Membrane.Kino.Player.Sink do
     {num, den} = main_track.framerate
 
     framerate_float = num / den
-    {:ok, :player_created} = KinoPlayer.call(kino, {:create, framerate_float})
+
+    case KinoPlayer.create(kino, framerate_float) do
+      {:ok, :player_created} ->
+        :ok
+
+      {:error, :already_created} ->
+        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
+    end
   end
 
   defp start_actions(tracks) do
@@ -195,14 +206,15 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
-    payload = Membrane.Payload.to_binary(payload)
+  def handle_write(Pad.ref(pad, _id), %Buffer{payload: payload}, _ctx, state) do
+    buffer = Membrane.Payload.to_binary(payload)
 
-    info = %{index: state.index, type: pad}
+    buffer = %{pad => buffer}
+    info = %{}
 
-    KinoPlayer.cast(state.kino, {:buffer, payload, info})
+    KinoPlayer.send_buffer(state.kino, buffer, info)
 
-    {[], %{state | index: state.index + 1}}
+    {[], state}
   end
 
   @impl true
@@ -216,7 +228,7 @@ defmodule Membrane.Kino.Player.Sink do
 
     state =
       if all_tracks_stopped?(tracks) do
-        %{state | timer_started?: false, index: 0}
+        %{state | timer_started?: false}
       else
         state
       end

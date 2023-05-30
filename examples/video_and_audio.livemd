@@ -17,10 +17,6 @@ Mix.install([
 ## Section
 
 ```elixir
-kino = Membrane.Kino.Player.new(:both)
-```
-
-```elixir
 import Membrane.ChildrenSpec
 
 alias Membrane.{
@@ -33,12 +29,17 @@ alias Membrane.H264.FFmpeg.Parser, as: H264_Parser
 alias Membrane.AAC
 alias Membrane.RemoteControlled, as: RC
 
+video_filepath = "./res/input_baseline.h264"
+audio_filepath = "./res/input.aac"
+
+kino = Kino.Player.new(video: true, audio: true)
+
 structure = [
-  child({:file_input, :h264}, %File.Source{location: "./res/input.h264"})
+  child({:file_input, :h264}, %File.Source{location: video_filepath})
   |> child({:parser, :h264}, %H264_Parser{framerate: {60, 1}})
   |> via_in(:video)
   |> get_child(:video_player),
-  child({:file_input, :aac}, %File.Source{location: "./res/input.aac"})
+  child({:file_input, :aac}, %File.Source{location: audio_filepath})
   |> child({:parser, :aac}, AAC.Parser)
   |> via_in(:audio)
   |> get_child(:video_player),
@@ -51,4 +52,5 @@ structure = [
 ```elixir
 pipeline = RC.Pipeline.start!()
 RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+kino
 ```
