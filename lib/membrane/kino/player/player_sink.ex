@@ -101,8 +101,8 @@ defmodule Membrane.Kino.Player.Sink do
     type = KinoPlayer.get_type(kino)
 
     tracks =
-      Enum.reduce(type, %{}, fn {type, exist}, acc ->
-        if exist do
+      Enum.reduce(type, %{}, fn {type, exists?}, acc ->
+        if exists? do
           Map.put(acc, type, Track.new())
         else
           acc
@@ -206,7 +206,7 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_write({_mod, pad, _ref}, %Buffer{payload: payload}, _ctx, state) do
+  def handle_write(Pad.ref(pad, _id), %Buffer{payload: payload}, _ctx, state) do
     buffer = Membrane.Payload.to_binary(payload)
 
     buffer = %{pad => buffer}

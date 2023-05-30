@@ -142,10 +142,10 @@ defmodule Membrane.Kino.Player do
         message: "Player was created without audio support, audio buffer provided"
     end
 
-    video = Map.get(buffers, :video) || <<>>
-    audio = Map.get(buffers, :audio) || <<>>
+    video = Map.get(buffers, :video, <<>>)
+    audio = Map.get(buffers, :audio, <<>>)
 
-    info = info |> Map.put(:video_size, byte_size(video)) |> Map.put_new(:type, :both)
+    info = info |> Map.put(:video_size, byte_size(video))
     payload = {:binary, info, video <> audio}
     send_payload(payload, ctx)
   end
