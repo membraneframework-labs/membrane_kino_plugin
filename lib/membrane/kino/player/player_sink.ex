@@ -87,11 +87,15 @@ defmodule Membrane.Kino.Player.Sink do
 
   def_input_pad :audio,
     accepted_format: %AAC{encapsulation: :ADTS},
-    availability: :on_request
+    availability: :on_request,
+    flow_control: :manual,
+    demand_unit: :buffers
 
   def_input_pad :video,
     accepted_format: %H264{profile: profile} when profile in [:constrained_baseline, :baseline],
-    availability: :on_request
+    availability: :on_request,
+    flow_control: :manual,
+    demand_unit: :buffers
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
