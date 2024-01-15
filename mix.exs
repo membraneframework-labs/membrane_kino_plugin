@@ -37,7 +37,7 @@ defmodule Membrane.Kino.Mixfile do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.0", override: true},
+      {:membrane_core, "~> 1.0"},
       {:kino, "~> 0.9.4"},
       {:membrane_h264_format, "~> 0.6.1"},
       {:membrane_aac_format, "~> 0.8.0"},
