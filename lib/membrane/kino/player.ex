@@ -37,8 +37,8 @@ defmodule Membrane.Kino.Player do
 
   @type t() :: Kino.JS.Live.t()
 
-  @type buffer_t() :: %{optional(:video) => binary() | nil, optional(:audio) => binary() | nil}
-  @type buffer_info_t() :: %{}
+  @type buffer() :: %{optional(:video) => binary() | nil, optional(:audio) => binary() | nil}
+  @type buffer_info() :: %{}
 
   @doc """
   Creates a new Membrane.Kino.Player component. Returns a handle to the player.
@@ -58,7 +58,7 @@ defmodule Membrane.Kino.Player do
 
     info = %{
       type: type,
-      flush_time: Time.round_to_milliseconds(opts[:flush_time])
+      flush_time: Time.as_milliseconds(opts[:flush_time], :round)
     }
 
     Kino.JS.Live.new(__MODULE__, info)
@@ -90,7 +90,7 @@ defmodule Membrane.Kino.Player do
   It is required to create player before sending buffers to it.
   See `create/2` function.
   """
-  @spec send_buffer(t(), buffer_t(), buffer_info_t()) :: :ok
+  @spec send_buffer(t(), buffer(), buffer_info()) :: :ok
   def send_buffer(kino, buffer, info) do
     Kino.JS.Live.cast(kino, {:buffer, buffer, info})
   end

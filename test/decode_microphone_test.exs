@@ -29,9 +29,9 @@ defmodule Membrane.DecodeMicrophoneTest do
       |> child(:to_aac, AAC.FDK.Encoder)
       |> child(:sink, %Membrane.File.Sink{location: output_file})
 
-    pipeline = Pipeline.start_link_supervised!(structure: structure)
+    pipeline = Pipeline.start_link_supervised!(spec: structure)
 
-    assert_pipeline_play(pipeline)
+    assert_start_of_stream(pipeline, :sink)
 
     assert_end_of_stream(pipeline, :sink)
 
