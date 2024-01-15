@@ -50,7 +50,7 @@ defmodule Membrane.Kino.Input do
 
     info = %{
       type: type,
-      flush_time: Time.round_to_milliseconds(opts[:flush_time])
+      flush_time: Time.as_milliseconds(opts[:flush_time], :round)
     }
 
     Kino.JS.Live.new(__MODULE__, info)

@@ -87,13 +87,15 @@ defmodule Membrane.Kino.Player.Sink do
 
   def_input_pad :audio,
     accepted_format: %AAC{encapsulation: :ADTS},
-    demand_unit: :buffers,
-    availability: :on_request
+    availability: :on_request,
+    flow_control: :manual,
+    demand_unit: :buffers
 
   def_input_pad :video,
     accepted_format: %H264{profile: profile} when profile in [:constrained_baseline, :baseline],
-    demand_unit: :buffers,
-    availability: :on_request
+    availability: :on_request,
+    flow_control: :manual,
+    demand_unit: :buffers
 
   @impl true
   def handle_init(_ctx, %__MODULE__{} = options) do
@@ -206,7 +208,7 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   @impl true
-  def handle_write(Pad.ref(pad, _id), %Buffer{payload: payload}, _ctx, state) do
+  def handle_buffer(Pad.ref(pad, _id), %Buffer{payload: payload}, _ctx, state) do
     buffer = Membrane.Payload.to_binary(payload)
 
     buffer = %{pad => buffer}

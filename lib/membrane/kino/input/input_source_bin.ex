@@ -51,8 +51,7 @@ defmodule Membrane.Kino.Input.Source do
 
   def_output_pad :output,
     accepted_format: Opus,
-    availability: :always,
-    mode: :push
+    availability: :always
 
   @impl true
   def handle_init(_ctx, options) do

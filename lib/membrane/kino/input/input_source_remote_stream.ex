@@ -29,7 +29,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
   def_output_pad :output,
     accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
     availability: :always,
-    mode: :push
+    flow_control: :push
 
   @impl true
   def handle_init(_ctx, options) do
