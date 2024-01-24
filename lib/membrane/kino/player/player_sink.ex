@@ -167,7 +167,6 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_start_of_stream(_pad, _ctx, state) do
-    IO.inspect(state, label: "handle_start_of_stream")
     if all_tracks_ready?(state.tracks) do
       new_state = create_player(state)
       if state.timer_started? do
@@ -193,19 +192,9 @@ defmodule Membrane.Kino.Player.Sink do
       {num, den} = main_track.framerate
 
       framerate_float = num / den
-
-      case KinoPlayer.create(state.kino, framerate_float) do
-        {:ok, :player_created} ->
-          %{state | player_created?: true}
-          {:error, any} ->
-          IO.inspect(any, label: "KinoPlayer.create error")
-          state
-        # {:error, :already_created} ->
-        #   # :ok
-        #   raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
-      end
+      KinoPlayer.create(state.kino, framerate_float)
+      %{state | player_created?: true}
     end
-
   end
 
   defp start_actions(tracks) do
