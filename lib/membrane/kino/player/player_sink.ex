@@ -114,7 +114,6 @@ defmodule Membrane.Kino.Player.Sink do
     state = %{
       kino: kino,
       timer_started?: false,
-      player_created?: false,
       type: type,
       tracks: tracks
     }
@@ -172,10 +171,12 @@ defmodule Membrane.Kino.Player.Sink do
         {[], state}
 
       state.timer_started? ->
-        {[], create_player(state)}
+        create_player(state)
+        {[], state}
 
       true ->
-        {start_actions(state.tracks), %{create_player(state) | timer_started?: true}}
+        create_player(state)
+        {start_actions(state.tracks), %{state | timer_started?: true}}
     end
   end
 
@@ -184,15 +185,17 @@ defmodule Membrane.Kino.Player.Sink do
   end
 
   defp create_player(state) do
-    if state.player_created? do
-      state
-    else
-      main_track = Map.get(state.tracks, :video) || Map.get(state.tracks, :audio)
-      {num, den} = main_track.framerate
+    main_track = Map.get(state.tracks, :video) || Map.get(state.tracks, :audio)
+    {num, den} = main_track.framerate
 
-      framerate_float = num / den
-      KinoPlayer.create(state.kino, framerate_float)
-      %{state | player_created?: true}
+    framerate_float = num / den
+
+    case KinoPlayer.create(state.kino, framerate_float) do
+      {:ok, :player_created} ->
+        :ok
+
+      {:error, :already_created} ->
+        Membrane.Logger.debug("Kino source already occupied")
     end
   end
 
