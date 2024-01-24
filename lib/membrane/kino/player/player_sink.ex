@@ -116,7 +116,7 @@ defmodule Membrane.Kino.Player.Sink do
       timer_started?: false,
       player_created?: false,
       type: type,
-      tracks: tracks,
+      tracks: tracks
     }
 
     {[], state}
@@ -167,16 +167,15 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_start_of_stream(_pad, _ctx, state) do
-    if all_tracks_ready?(state.tracks) do
-      new_state = create_player(state)
-      if state.timer_started? do
-        {[], new_state}
-      else
-        actions = start_actions(state.tracks)
-        {actions, %{new_state | timer_started?: true}}
-      end
-    else
-      {[],state}
+    cond do
+      not all_tracks_ready?(state.tracks) ->
+        {[], state}
+
+      state.timer_started? ->
+        {[], create_player(state)}
+
+      true ->
+        {start_actions(state.tracks), %{create_player(state) | timer_started?: true}}
     end
   end
 
