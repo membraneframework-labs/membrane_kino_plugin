@@ -92,7 +92,7 @@ defmodule Membrane.Kino.Player do
   """
   @spec send_buffer(t(), buffer(), buffer_info()) :: :ok
   def send_buffer(kino, buffer, info) do
-    IO.inspect(buffer, label: "send_buffer")
+    # IO.inspect(buffer, label: "send_buffer")
 
     Kino.JS.Live.cast(kino, {:buffer, buffer, info})
   end
