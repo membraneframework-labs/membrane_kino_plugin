@@ -195,7 +195,7 @@ defmodule Membrane.Kino.Player.Sink do
         :ok
 
       {:error, :already_created} ->
-        Membrane.Logger.debug("Kino source already occupied")
+        Membrane.Logger.debug("Tried to create Kino player, while it was already created")
     end
   end
 
