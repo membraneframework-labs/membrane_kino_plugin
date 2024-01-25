@@ -166,33 +166,36 @@ defmodule Membrane.Kino.Player.Sink do
 
   @impl true
   def handle_start_of_stream(_pad, _ctx, state) do
-    actions =
-      if all_tracks_ready?(state.tracks) do
-        create_player(state.tracks, state.kino)
-        start_actions(state.tracks)
-      else
-        []
-      end
+    cond do
+      not all_tracks_ready?(state.tracks) ->
+        {[], state}
 
-    {actions, %{state | timer_started?: true}}
+      state.timer_started? ->
+        create_player(state)
+        {[], state}
+
+      true ->
+        create_player(state)
+        {start_actions(state.tracks), %{state | timer_started?: true}}
+    end
   end
 
   defp all_tracks_ready?(tracks) do
     Enum.all?(tracks, fn {_pad, track} -> Track.ready?(track) end)
   end
 
-  defp create_player(tracks, kino) do
-    main_track = Map.get(tracks, :video) || Map.get(tracks, :audio)
+  defp create_player(state) do
+    main_track = Map.get(state.tracks, :video) || Map.get(state.tracks, :audio)
     {num, den} = main_track.framerate
 
     framerate_float = num / den
 
-    case KinoPlayer.create(kino, framerate_float) do
+    case KinoPlayer.create(state.kino, framerate_float) do
       {:ok, :player_created} ->
         :ok
 
       {:error, :already_created} ->
-        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
+        Membrane.Logger.debug("Tried to create Kino player, while it was already created")
     end
   end
 
@@ -213,7 +216,6 @@ defmodule Membrane.Kino.Player.Sink do
 
     buffer = %{pad => buffer}
     info = %{}
-
     KinoPlayer.send_buffer(state.kino, buffer, info)
 
     {[], state}
