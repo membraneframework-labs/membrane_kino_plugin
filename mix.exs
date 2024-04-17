@@ -1,7 +1,7 @@
 defmodule Membrane.Kino.Mixfile do
   use Mix.Project
 
-  @version "0.3.1"
+  @version "0.3.2"
   @github_url "https://github.com/membraneframework-labs/membrane_kino_plugin/"
 
   def project do
@@ -46,11 +46,11 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_funnel_plugin, "~> 0.9.0"},
 
       # Testing
-      {:membrane_file_plugin, "~> 0.16.0"},
+      {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_raw_video_format, "~> 0.4.0", only: :test},
       {:membrane_opus_plugin, "~> 0.19.1", only: :test},
       {:membrane_aac_fdk_plugin, "~> 0.18.2", only: :test},
-      {:membrane_matroska_plugin, "~> 0.5.0", only: :test},
+      {:membrane_matroska_plugin, "~> 0.5.1", only: :test},
       {:membrane_generator_plugin, "~> 0.10.0", only: :test},
 
       # Development
