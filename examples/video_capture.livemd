@@ -26,20 +26,7 @@ Mix.install([
 ```elixir
 import Membrane.ChildrenSpec
 
-alias Membrane.{
-  Opus,
-  File,
-  AAC,
-  Time,
-  RawAudio
-}
-
-# play_kino_audio =
-#   child(:input, %Membrane.Kino.Input.Source{kino: kino_input})
-#   |> child(:from_opus, Opus.Decoder)
-#   |> child(:to_aac, AAC.FDK.Encoder)
-#   |> via_in(:audio)
-#   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+alias Membrane.Time
 
 kino_input =
   Membrane.Kino.Input.new(
@@ -57,7 +44,6 @@ kino_player =
 
 video_loopback =
   child(:input, %Membrane.Kino.Input.Source{kino: kino_input, video: true, audio: false})
-  # |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
