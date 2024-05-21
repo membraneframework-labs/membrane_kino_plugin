@@ -1,0 +1,54 @@
+# Video capture
+
+```elixir
+File.cd(__DIR__)
+Logger.configure(level: :error)
+
+Mix.install([
+  {:membrane_core, "~> 1.0"},
+  {:membrane_file_plugin, "~> 0.17.0"},
+  {:membrane_kino_plugin, path: ".."}
+])
+```
+
+## Section
+
+```elixir
+alias Membrane.RemoteControlled, as: RC
+import Membrane.ChildrenSpec
+
+alias Membrane.{
+  Opus,
+  File,
+  AAC,
+  Time,
+  RawAudio
+}
+
+kino_input =
+  Membrane.Kino.Input.new(
+    audio: true,
+    video: true,
+    flush_time: Time.milliseconds(1)
+  )
+
+# kino_player =
+#   Membrane.Kino.Player.new(
+#     audio: true,
+#     flush_time: Time.milliseconds(500)
+#   )
+
+# play_kino_audio =
+#   child(:input, %Membrane.Kino.Input.Source{kino: kino_input})
+#   |> child(:from_opus, Opus.Decoder)
+#   |> child(:to_aac, AAC.FDK.Encoder)
+#   |> via_in(:audio)
+#   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+
+# structure = play_kino_audio
+# pipeline = RC.Pipeline.start!()
+# RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+
+# Kino.render(kino_input)
+# kino_player
+```

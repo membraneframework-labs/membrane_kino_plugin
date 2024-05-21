@@ -49,7 +49,7 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_raw_video_format, "~> 0.4.0", only: :test},
       {:membrane_opus_plugin, "~> 0.19.1", only: :test},
-      {:membrane_aac_fdk_plugin, "~> 0.18.2", only: :test},
+      {:membrane_aac_fdk_plugin, "~> 0.18.8", only: :test},
       {:membrane_matroska_plugin, "~> 0.5.1", only: :test},
       {:membrane_generator_plugin, "~> 0.10.0", only: :test},
 

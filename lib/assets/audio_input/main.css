@@ -31,7 +31,7 @@
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-#record-button .ri-mic-line {
+#record-button .ri-mic-line .ri-camera-line {
   font-size: 1.25rem;
   margin-right: 0.5rem;
 }
@@ -46,7 +46,7 @@
   color: #fff;
 }
 
-#record-button .recording .ri-mic-line {
+#record-button .recording .ri-mic-line .ri-camera-line {
   display: none;
 }
 
