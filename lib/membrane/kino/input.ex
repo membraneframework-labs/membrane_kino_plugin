@@ -27,7 +27,7 @@ defmodule Membrane.Kino.Input do
     defexception [:message]
   end
 
-  use Kino.JS, assets_path: "lib/assets/audio_input"
+  use Kino.JS, assets_path: "lib/assets/input"
   use Kino.JS.Live
 
   alias Membrane.Time
@@ -91,6 +91,16 @@ defmodule Membrane.Kino.Input do
   def handle_event("audio_frame", {:binary, info, binary}, ctx) do
     if ctx.assigns.client do
       send(ctx.assigns.client, {:audio_frame, info, binary})
+    end
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("video_frame", {:binary, info, binary}, ctx) do
+    # IO.inspect(binary, label: "video_frame binary")
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:video_frame, info, binary})
     end
 
     {:noreply, ctx}

@@ -44,7 +44,7 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_opus_format, "~> 0.3.0"},
       {:membrane_matroska_format, "~> 0.1.0"},
       {:membrane_funnel_plugin, "~> 0.9.0"},
-
+      {:membrane_h26x_plugin, "~> 0.10.2"},
       # Testing
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_raw_video_format, "~> 0.4.0", only: :test},

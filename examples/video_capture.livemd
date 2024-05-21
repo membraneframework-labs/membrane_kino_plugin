@@ -7,14 +7,23 @@ Logger.configure(level: :error)
 Mix.install([
   {:membrane_core, "~> 1.0"},
   {:membrane_file_plugin, "~> 0.17.0"},
-  {:membrane_kino_plugin, path: ".."}
+  {:membrane_kino_plugin, path: ".."},
+  {:membrane_opus_plugin, "~> 0.20.0"},
+  {:membrane_aac_fdk_plugin, "~> 0.18.0"},
+  {:membrane_aac_plugin, "~> 0.18.0"},
+  {:membrane_wav_plugin, "~> 0.10.0"},
+  {:membrane_generator_plugin, "~> 0.10.0"},
+  {:membrane_raw_audio_format, "~> 0.12.0"},
+  {:membrane_matroska_plugin, "~> 0.5.1"},
+  {:membrane_portaudio_plugin, "~> 0.19.2"},
+  {:membrane_ffmpeg_swresample_plugin, "~> 0.20.1"},
+  {:membrane_h26x_plugin, "~> 0.10.2"}
 ])
 ```
 
 ## Section
 
 ```elixir
-alias Membrane.RemoteControlled, as: RC
 import Membrane.ChildrenSpec
 
 alias Membrane.{
@@ -25,19 +34,6 @@ alias Membrane.{
   RawAudio
 }
 
-kino_input =
-  Membrane.Kino.Input.new(
-    audio: true,
-    video: true,
-    flush_time: Time.milliseconds(1)
-  )
-
-# kino_player =
-#   Membrane.Kino.Player.new(
-#     audio: true,
-#     flush_time: Time.milliseconds(500)
-#   )
-
 # play_kino_audio =
 #   child(:input, %Membrane.Kino.Input.Source{kino: kino_input})
 #   |> child(:from_opus, Opus.Decoder)
@@ -45,10 +41,30 @@ kino_input =
 #   |> via_in(:audio)
 #   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
-# structure = play_kino_audio
-# pipeline = RC.Pipeline.start!()
-# RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+kino_input =
+  Membrane.Kino.Input.new(
+    audio: false,
+    video: true,
+    flush_time: Time.milliseconds(20)
+  )
 
-# Kino.render(kino_input)
-# kino_player
+kino_player =
+  Membrane.Kino.Player.new(
+    audio: false,
+    video: true,
+    flush_time: Time.milliseconds(50)
+  )
+
+video_loopback =
+  child(:input, %Membrane.Kino.Input.Source{kino: kino_input, video: true, audio: false})
+  # |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
+  |> via_in(:video)
+  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+
+structure = video_loopback
+pipeline = Membrane.RCPipeline.start!()
+Membrane.RCPipeline.exec_actions(pipeline, spec: structure)
+
+Kino.render(kino_input)
+kino_player
 ```
