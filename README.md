@@ -6,7 +6,7 @@
 
 Package required to play media in the Livebook, directly from the Membrane pipeline.
 
-Supports playing audio and video streams.
+Supports playing and recording audio and video streams.
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 
