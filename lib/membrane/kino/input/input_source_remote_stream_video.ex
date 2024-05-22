@@ -4,18 +4,19 @@ defmodule Membrane.Kino.Input.Source.RemoteStreamVideo do
   This module returns raw video data in H264 format.
   For more practical usage, see `Membrane.Kino.Input.VideoSource`.
   """
-  defmodule KinoSourceAlreadyOccupiedError do
-    defexception [:message]
-  end
-
   use Membrane.Source
 
   alias Membrane.Kino.Input, as: KinoInput
+
   alias Membrane.{
+    Buffer,
     RemoteStream,
-    Time,
-    Buffer
+    Time
   }
+
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
 
   def_options kino: [
                 spec: KinoInput.t(),

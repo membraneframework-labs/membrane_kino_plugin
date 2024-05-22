@@ -5,9 +5,9 @@ defmodule Membrane.Kino.Input.VideoSource do
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
   """
+  use Membrane.Bin
 
   alias Membrane.H264
-  use Membrane.Bin
   alias Membrane.Kino
 
   def_options kino: [
@@ -17,7 +17,8 @@ defmodule Membrane.Kino.Input.VideoSource do
               framerate: [
                 spec: H264.framerate(),
                 default: %{framerate: {30, 1}},
-                description: "This should be set to the same value as framerate provided to Membrane.Kino.Input to ensure correct timestamps"
+                description:
+                  "This should be set to the same value as framerate provided to Membrane.Kino.Input to ensure correct timestamps"
               ]
 
   def_output_pad :output,
@@ -25,12 +26,13 @@ defmodule Membrane.Kino.Input.VideoSource do
     availability: :always
 
   @impl true
-  def handle_init(_ctx,  options) do
+  def handle_init(_ctx, options) do
     structure = [
       child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
       |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
       |> bin_output()
     ]
+
     {[spec: structure], %{}}
   end
 end

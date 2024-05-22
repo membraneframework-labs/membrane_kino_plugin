@@ -5,6 +5,11 @@ defmodule Membrane.Kino.Player.Sink do
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Player` element into the Membrane pipeline and shows video in livebook's cells.
   """
+  use Membrane.Sink
+  require Membrane.Logger
+
+  alias Membrane.Kino.Player, as: KinoPlayer
+  alias Membrane.{AAC, Buffer, H264, Time}
 
   defmodule Track do
     @moduledoc false
@@ -43,13 +48,6 @@ defmodule Membrane.Kino.Player.Sink do
   defmodule KinoSourceAlreadyOccupiedError do
     defexception [:message]
   end
-
-  use Membrane.Sink
-
-  require Membrane.Logger
-
-  alias Membrane.Kino.Player, as: KinoPlayer
-  alias Membrane.{AAC, Buffer, H264, Time}
 
   def_options kino: [
                 spec: KinoPlayer.t(),
@@ -125,11 +123,11 @@ defmodule Membrane.Kino.Player.Sink do
     end
   end
 
-  defp get_framerate(stream_format = %H264{}) do
+  defp get_framerate(%H264{} = stream_format) do
     stream_format.framerate
   end
 
-  defp get_framerate(stream_format = %AAC{}) do
+  defp get_framerate(%AAC{} = stream_format) do
     num = stream_format.sample_rate
     den = stream_format.samples_per_frame
     {num, den}

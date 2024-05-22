@@ -7,11 +7,12 @@ defmodule Membrane.Kino.Input.AudioSource do
   """
 
   use Membrane.Bin
+
   alias Membrane.{
+    Funnel,
     Kino,
-    Opus,
     Matroska,
-    Funnel
+    Opus
   }
 
   def_options kino: [
@@ -30,6 +31,7 @@ defmodule Membrane.Kino.Input.AudioSource do
       |> child(:demuxer, Matroska.Demuxer),
       child(:funnel, Funnel) |> bin_output()
     ]
+
     {[spec: structure], %{}}
   end
 

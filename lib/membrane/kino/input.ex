@@ -22,15 +22,14 @@ defmodule Membrane.Kino.Input do
 
   ```
   """
-
-  defmodule InputError do
-    defexception [:message]
-  end
-
   use Kino.JS, assets_path: "lib/assets/input"
   use Kino.JS.Live
 
   alias Membrane.Time
+
+  defmodule InputError do
+    defexception [:message]
+  end
 
   @type t() :: Kino.JS.Live.t()
 
@@ -42,7 +41,7 @@ defmodule Membrane.Kino.Input do
   def new(opts) do
     opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(1))
 
-    if (opts[:video] == false and opts[:audio] == false) do
+    if opts[:video] == false and opts[:audio] == false do
       raise ArgumentError, "At least one of :video or :audio should be true"
     end
 
@@ -53,14 +52,15 @@ defmodule Membrane.Kino.Input do
       },
       flush_time: Time.as_milliseconds(opts[:flush_time], :round)
     }
+
     Kino.JS.Live.new(__MODULE__, info)
   end
 
   defp sanitize_video_parameters(%{} = video) do
     video
-     |> Map.put_new(:width, 640)
-     |> Map.put_new(:height, 480)
-     |> Map.put_new(:framerate, 30)
+    |> Map.put_new(:width, 640)
+    |> Map.put_new(:height, 480)
+    |> Map.put_new(:framerate, 30)
   end
 
   defp sanitize_video_parameters(true = _video) do

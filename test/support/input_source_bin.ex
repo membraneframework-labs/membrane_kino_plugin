@@ -1,11 +1,12 @@
 defmodule Membrane.KinoTest.InputSourceBin do
+  @moduledoc false
   use Membrane.Bin
 
   alias Membrane.{
     File,
-    Opus,
+    Funnel,
     Matroska,
-    Funnel
+    Opus
   }
 
   def_options location: [

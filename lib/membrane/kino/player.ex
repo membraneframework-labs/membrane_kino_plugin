@@ -22,6 +22,11 @@ defmodule Membrane.Kino.Player do
   ```
   """
 
+  use Kino.JS, assets_path: "lib/assets/player"
+  use Kino.JS.Live
+
+  alias Membrane.Time
+
   defmodule PlayerError do
     defexception [:message]
   end
@@ -29,11 +34,6 @@ defmodule Membrane.Kino.Player do
   defmodule JMuxerError do
     defexception [:message]
   end
-
-  use Kino.JS, assets_path: "lib/assets/player"
-  use Kino.JS.Live
-
-  alias Membrane.Time
 
   @type t() :: Kino.JS.Live.t()
 

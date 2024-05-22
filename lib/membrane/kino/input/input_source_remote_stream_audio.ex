@@ -4,19 +4,19 @@ defmodule Membrane.Kino.Input.Source.RemoteStreamAudio do
   This module returns raw audio data in WEBM format.
   For more practical usage, see `Membrane.Kino.Input.AudioSource`.
   """
-  defmodule KinoSourceAlreadyOccupiedError do
-    defexception [:message]
-  end
-
   use Membrane.Source
 
   alias Membrane.Kino.Input, as: KinoInput
 
   alias Membrane.{
+    Buffer,
     RemoteStream,
-    Time,
-    Buffer
+    Time
   }
+
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
 
   def_options kino: [
                 spec: KinoInput.t(),
