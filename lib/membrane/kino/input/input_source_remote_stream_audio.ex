@@ -1,11 +1,8 @@
 defmodule Membrane.Kino.Input.Source.RemoteStreamAudio do
   @moduledoc """
-  This module provides a audio microphone (and video camera in the future) input source
-  compatible with the Livebook environment. This module returns raw audio data in WEBM format.
-  For more practical usage, see `Membrane.Kino.Input.Source.
-
-  Livebook handles multimedia and specific media by using the Kino library and its extensions.
-  This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
+  This module provides a audio input source compatible with the Livebook environment.
+  This module returns raw audio data in WEBM format.
+  For more practical usage, see `Membrane.Kino.Input.AudioSource`.
   """
   defmodule KinoSourceAlreadyOccupiedError do
     defexception [:message]

@@ -1,38 +1,9 @@
 defmodule Membrane.Kino.Input.AudioSource do
   @moduledoc """
-  This module provides a audio microphone input source
-  compatible with the Livebook environment.
+  This module provides a audio input source compatible with the Livebook environment.
 
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
-
-  ## Example
-  ``` elixir
-  # upper cell
-  kino = Membrane.Kino.Input.new(audio: true)
-
-  # lower cell
-  import Membrane.ChildrenSpec
-
-  alias Membrane.{
-    Kino,
-    Opus,
-    File
-  }
-  alias Membrane.H264.FFmpeg.Parser
-  alias Membrane.RemoteControlled, as: RC
-
-  output_filepath = "path/to/file.h264"
-
-  structure =
-    child(:audio_input, %Kino.Input.Source{kino: kino})
-    |> child(:decoder, %Opus.Decoder)
-    |> child(:file_output, %File.Sink{location: output_filepath})
-
-  pipeline = RC.Pipeline.start!()
-  RC.Pipeline.exec_actions(pipeline, spec: structure)
-  RC.Pipeline.exec_actions(pipeline, playback: :playing)
-  ```
   """
 
   use Membrane.Bin

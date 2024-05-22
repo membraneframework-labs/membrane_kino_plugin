@@ -1,6 +1,8 @@
 defmodule Membrane.Kino.Input.Source.RemoteStreamVideo do
   @moduledoc """
-  todo
+  This module provides a video input source compatible with the Livebook environment.
+  This module returns raw video data in H264 format.
+  For more practical usage, see `Membrane.Kino.Input.VideoSource`.
   """
   defmodule KinoSourceAlreadyOccupiedError do
     defexception [:message]

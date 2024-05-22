@@ -1,6 +1,6 @@
 defmodule Membrane.Kino.Input do
   @moduledoc """
-  Kino component capable of capturing audio from the microphone (and camera video in the future).
+  Kino component capable of capturing audio from the microphone or video from camera.
 
   Element provides synchronous API for sending frames to the different processes:
   ```elixir
