@@ -1,4 +1,4 @@
-# Video capture
+# Video capture and loopback
 
 ```elixir
 File.cd(__DIR__)
@@ -10,7 +10,9 @@ Mix.install([
 ])
 ```
 
-## Section
+## Pipeline definition
+
+Live input video is requested from web browser (webcam), fed into elixir pipeline and back into kino player.
 
 ```elixir
 import Membrane.ChildrenSpec
@@ -40,9 +42,14 @@ video_loopback =
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
-structure = video_loopback
+:ok
+```
+
+## Playing pipeline
+
+```elixir
 pipeline = RC.start!()
-RC.exec_actions(pipeline, spec: structure)
+RC.exec_actions(pipeline, spec: video_loopback)
 
 Kino.render(kino_input)
 kino_player

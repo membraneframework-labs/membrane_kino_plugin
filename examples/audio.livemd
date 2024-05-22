@@ -5,10 +5,10 @@ File.cd(__DIR__)
 Logger.configure(level: :error)
 
 Mix.install([
-  {:membrane_core, "~> 0.11.2"},
+  {:membrane_core, "~> 1.0"},
   {:membrane_kino_plugin, path: ".."},
-  {:membrane_file_plugin, "~> 0.13.0"},
-  {:membrane_aac_plugin, "~> 0.13.0"}
+  {:membrane_file_plugin, "~> 0.17.0"},
+  {:membrane_aac_plugin, "~> 0.18.1"}
 ])
 ```
 
@@ -24,8 +24,8 @@ alias Membrane.{
   Kino
 }
 
+alias Membrane.RCPipeline, as: RC
 alias Membrane.AAC.Parser
-alias Membrane.RemoteControlled, as: RC
 
 input_filepath = "./res/input.aac"
 kino = Membrane.Kino.Player.new(audio: true)
@@ -42,7 +42,7 @@ structure =
 ## Playing pipeline
 
 ```elixir
-pipeline = RC.Pipeline.start!()
-RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+pipeline = RC.start!()
+RC.exec_actions(pipeline, spec: structure)
 kino
 ```

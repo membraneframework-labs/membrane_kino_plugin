@@ -25,15 +25,9 @@ defmodule Membrane.Kino.Input.VideoSource do
   def handle_init(_ctx,  options) do
     structure = [
       child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
-      |> child(:parser, %Membrane.H264.Parser{generate_best_effort_timestamps: options.framerate})
+      |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
       |> bin_output()
     ]
     {[spec: structure], %{}}
-  end
-
-  # todo
-  @impl true
-  def handle_child_notification({:new_track, {_track_id, _track_info}}, :demuxer, _ctx, _state) do
-    raise "video bin handle_child_notification not implemented"
   end
 end

@@ -5,14 +5,14 @@ File.cd(__DIR__)
 Logger.configure(level: :error)
 
 Mix.install([
-  {:membrane_core, "~> 0.11.2"},
+  {:membrane_core, "~> 1.0"},
   {:membrane_kino_plugin, path: ".."},
-  {:membrane_file_plugin, "~> 0.13.0"},
-  {:membrane_h264_ffmpeg_plugin, "~> 0.25.2"}
+  {:membrane_file_plugin, "~> 0.17.0"},
+  {:membrane_h26x_plugin, "~> 0.10.2"}
 ])
 ```
 
-## Playing pipeline
+## Pipeline definition
 
 ```elixir
 import Membrane.ChildrenSpec
@@ -23,23 +23,25 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.H264.FFmpeg.Parser
-alias Membrane.RemoteControlled, as: RC
+alias Membrane.H264.Parser, as: H264_Parser
+alias Membrane.RCPipeline, as: RC
 
 video_filepath = "./res/input_baseline.h264"
 kino = Membrane.Kino.Player.new(video: true)
 
 structure =
   child(:file_input, %File.Source{location: video_filepath})
-  |> child(:parser, %Parser{framerate: {60, 1}})
+  |> child(:parser, %H264_Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
   |> via_in(:video)
   |> child(:video_player, %Kino.Player.Sink{kino: kino})
 
 :ok
 ```
 
+## Playing pipeline
+
 ```elixir
-pipeline = RC.Pipeline.start!()
-RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+pipeline = RC.start!()
+RC.exec_actions(pipeline, spec: structure)
 kino
 ```
