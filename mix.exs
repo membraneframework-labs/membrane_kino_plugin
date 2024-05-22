@@ -1,7 +1,7 @@
 defmodule Membrane.Kino.Mixfile do
   use Mix.Project
 
-  @version "0.3.2"
+  @version "0.4.0"
   @github_url "https://github.com/membraneframework-labs/membrane_kino_plugin/"
 
   def project do
