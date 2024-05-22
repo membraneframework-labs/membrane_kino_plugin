@@ -14,7 +14,7 @@ defmodule Membrane.Kino.Input.VideoSource do
               framerate: [
                 spec: H264.framerate(),
                 default: %{framerate: {30, 1}},
-                description: "Target framerate that video will be parsed to"
+                description: "This must be set to the same value as framerate provided to Membrane.Kino.Input to ensure correct timestamps"
               ]
 
   def_output_pad :output,
@@ -33,18 +33,7 @@ defmodule Membrane.Kino.Input.VideoSource do
 
   # todo
   @impl true
-  def handle_child_notification({:new_track, {track_id, track_info}}, :demuxer, _ctx, state) do
-    case track_info.codec do
-      :opus ->
-        structure =
-          get_child(:demuxer)
-          |> via_out(Pad.ref(:output, track_id))
-          |> get_child(:funnel)
-
-        {[spec: structure], state}
-
-      _else ->
-        raise "Unsupported codec: #{inspect(track_info.codec)}"
-    end
+  def handle_child_notification({:new_track, {_track_id, _track_info}}, :demuxer, _ctx, _state) do
+    raise "video bin handle_child_notification not implemented"
   end
 end
