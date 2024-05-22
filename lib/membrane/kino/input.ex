@@ -98,7 +98,6 @@ defmodule Membrane.Kino.Input do
 
   @impl true
   def handle_event("video_frame", {:binary, info, binary}, ctx) do
-    # IO.inspect(binary, label: "video_frame binary")
     if ctx.assigns.client do
       send(ctx.assigns.client, {:video_frame, info, binary})
     end

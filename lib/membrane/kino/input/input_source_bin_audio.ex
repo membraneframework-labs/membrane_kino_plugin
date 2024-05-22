@@ -1,6 +1,6 @@
-defmodule Membrane.Kino.Input.Source do
+defmodule Membrane.Kino.Input.AudioSource do
   @moduledoc """
-  This module provides a audio microphone (and video camera in the future) input source
+  This module provides a audio microphone input source
   compatible with the Livebook environment.
 
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
@@ -35,7 +35,6 @@ defmodule Membrane.Kino.Input.Source do
   ```
   """
 
-  alias Membrane.H264
   use Membrane.Bin
   alias Membrane.{
     Kino,
@@ -47,51 +46,20 @@ defmodule Membrane.Kino.Input.Source do
   def_options kino: [
                 spec: Membrane.Kino.Input.t(),
                 description: "Membrane.Kino.Player handle."
-              ],
-              audio: [
-                spec: boolean(),
-                default: false,
-                description: "Enable audio support"
-              ],
-              video: [
-                spec: boolean(),
-                default: false,
-                description: "Enable video support"
               ]
 
   def_output_pad :output,
-    accepted_format: any_of(Opus, H264),
+    accepted_format: Opus,
     availability: :always
-    # flow_control: :auto
 
   @impl true
-  def handle_init(_ctx, %{audio: true, video: false} = options) do
+  def handle_init(_ctx, options) do
     structure = [
-      child(:source, %Kino.Input.Source.RemoteStream{kino: options.kino})
+      child(:source, %Kino.Input.Source.RemoteStreamAudio{kino: options.kino})
       |> child(:demuxer, Matroska.Demuxer),
       child(:funnel, Funnel) |> bin_output()
     ]
     {[spec: structure], %{}}
-  end
-
-  @impl true
-  def handle_init(_ctx, %{audio: false, video: true} = options) do
-    structure = [
-      child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
-      |> child(:parser, %Membrane.H264.Parser{generate_best_effort_timestamps: %{framerate: {30, 1}}})
-      |> bin_output()
-    ]
-    {[spec: structure], %{}}
-  end
-
-  @impl true
-  def handle_init(_ctx, %{audio: false, video: false} = _options) do
-    raise "one of :video or :audio options must be set to true"
-  end
-
-  @impl true
-  def handle_init(_ctx, %{audio: true, video: true} = _options) do
-    raise "Video&Audio mode not yet developed"
   end
 
   @impl true

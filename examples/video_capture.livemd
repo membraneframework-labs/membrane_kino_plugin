@@ -43,7 +43,7 @@ kino_player =
   )
 
 video_loopback =
-  child(:input, %Membrane.Kino.Input.Source{kino: kino_input, video: true, audio: false})
+  child(:input, %Membrane.Kino.Input.VideoSource{kino: kino_input})
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
