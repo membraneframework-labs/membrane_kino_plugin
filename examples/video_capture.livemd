@@ -20,10 +20,12 @@ import Membrane.ChildrenSpec
 alias Membrane.Time
 alias Membrane.RCPipeline, as: RC
 
+framerate = 30
+
 kino_input =
   Membrane.Kino.Input.new(
     audio: false,
-    video: %{width: 1920, height: 1080, framerate: 30},
+    video: %{width: 1920, height: 1080, framerate: framerate},
     flush_time: Time.milliseconds(10)
   )
 
@@ -37,7 +39,7 @@ kino_player =
 video_loopback =
   child(:input, %Membrane.Kino.Input.VideoSource{
     kino: kino_input,
-    framerate: %{framerate: {30, 1}}
+    framerate: %{framerate: {framerate, 1}}
   })
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
