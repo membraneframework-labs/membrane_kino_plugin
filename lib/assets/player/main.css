@@ -13,3 +13,7 @@ video {
   border: 1px solid #333;
   margin: 0 auto;
 }
+
+.video-mirror {
+  transform: scale(-1,1);
+}

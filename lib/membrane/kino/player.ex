@@ -48,9 +48,9 @@ defmodule Membrane.Kino.Player do
   """
   @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
   def new(opts) do
-    opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(0))
-
+    opts = Keyword.validate!(opts, video: false, mirror: false, audio: false, flush_time: Time.milliseconds(0))
     type = Keyword.take(opts, [:video, :audio])
+    mirror = Keyword.get(opts, :mirror)
 
     if not (opts[:video] or opts[:audio]) do
       raise ArgumentError, "At least one of :video or :audio should be true"
@@ -58,6 +58,7 @@ defmodule Membrane.Kino.Player do
 
     info = %{
       type: type,
+      mirror: mirror,
       flush_time: Time.as_milliseconds(opts[:flush_time], :round)
     }
 

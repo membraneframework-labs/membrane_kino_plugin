@@ -33,6 +33,7 @@ kino_player =
   Membrane.Kino.Player.new(
     audio: false,
     video: true,
+    mirror: true,
     flush_time: Time.milliseconds(10)
   )
 
