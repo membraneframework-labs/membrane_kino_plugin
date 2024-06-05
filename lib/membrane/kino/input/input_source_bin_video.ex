@@ -25,6 +25,12 @@ defmodule Membrane.Kino.Input.VideoSource do
                 default: %{width: 1920, height: 1080},
                 description:
                   "Desired output resolution. If it cannot be acheived natively the video will be scaled."
+              ],
+              scale: [
+                spec: boolean(),
+                default: false,
+                description:
+                  "To scale or not to scale."
               ]
 
   def_output_pad :output,
@@ -33,17 +39,20 @@ defmodule Membrane.Kino.Input.VideoSource do
 
   @impl true
   def handle_init(_ctx, options) do
-    IO.inspect(options)
-    structure = [
+    structure = if options.scale do
       child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
       |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
-      # |> child(:parser, %H264.Parser{generate_best_effort_timestamps: false})
       # |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
       |> child(:decoder, Membrane.H264.FFmpeg.Decoder)
       |> child(:scaler, %Membrane.FFmpeg.SWScale.Scaler{output_width: options.resolution.width, output_height: options.resolution.height})
       |> child(:encoder, %Membrane.H264.FFmpeg.Encoder{profile: :baseline})
       |> bin_output()
-    ]
+    else
+      child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
+      |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
+      |> bin_output()
+    end
+
 
     {[spec: structure], %{}}
   end

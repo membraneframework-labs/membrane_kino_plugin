@@ -45,7 +45,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
         :video ->
           bin_input()
           |> via_in(:video)
-          |> child(:realtimer, Realtimer)
+          # |> child(:realtimer, Realtimer)
           |> child(:player, %Kino.Player.Sink{kino: kino})
 
       end

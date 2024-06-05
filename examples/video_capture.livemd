@@ -30,8 +30,8 @@ framerate = 30
 kino_input =
   Membrane.Kino.Input.new(
     audio: false,
-    video: %{width: 1920, height: 1080, framerate: framerate},
-    flush_time: Time.milliseconds(10)
+    video: %{width: 100, height: 100, framerate: framerate},
+    flush_time: Time.milliseconds(20)
   )
 
 kino_player =
@@ -47,6 +47,7 @@ video_loopback =
     kino: kino_input,
     framerate: %{framerate: {framerate, 1}},
     resolution: %{width: 100, height: 100}
+    # scale: true
   })
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})

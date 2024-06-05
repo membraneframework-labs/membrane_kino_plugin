@@ -61,7 +61,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStreamVideo do
   @impl true
   def handle_info({:video_frame, info, binary}, ctx, state) do
     duration = Map.get(info, "duration", 0)
-
+    # IO.inspect(duration)
     buffer = %Buffer{
       payload: binary,
       metadata: %{
