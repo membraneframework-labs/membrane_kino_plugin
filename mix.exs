@@ -45,9 +45,12 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_matroska_format, "~> 0.1.0"},
       {:membrane_funnel_plugin, "~> 0.9.0"},
       {:membrane_h26x_plugin, "~> 0.10.2"},
+      {:membrane_realtimer_plugin, "~> 0.9.0"},
+      {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
+      {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
       # Testing
       {:membrane_file_plugin, "~> 0.17.0"},
-      {:membrane_raw_video_format, "~> 0.4.0", only: :test},
+      {:membrane_raw_video_format, "~> 0.3.0"},
       {:membrane_opus_plugin, "~> 0.19.1", only: :test},
       {:membrane_aac_fdk_plugin, "~> 0.18.8", only: :test},
       {:membrane_matroska_plugin, "~> 0.5.1", only: :test},
