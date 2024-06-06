@@ -30,21 +30,21 @@ height = 100
 
 kino_input =
   Membrane.Kino.Input.new(
-    audio: false,
+    audio: true,
     video: %{desired_width: width, desired_height: height},
     flush_time: Time.milliseconds(10)
   )
 
 kino_player =
   Membrane.Kino.Player.new(
-    audio: false,
+    audio: true,
     video: true,
     mirror: true,
     flush_time: Time.milliseconds(10)
   )
 
 video_loopback =
-  child(:video_source, %Membrane.Kino.Input.VideoSource{kino: kino_input})
+  child(:source, %Membrane.Kino.Input.VideoSource{kino: kino_input})
   # |> child(:rgb_decoder, %Membrane.H264_RGB.Decoder{
   # resolution: %{width: width, height: height}
   # resolution: :native

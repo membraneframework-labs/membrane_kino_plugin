@@ -1,0 +1,96 @@
+defmodule Membrane.Kino.Input.Source.RemoteStream do
+  @moduledoc """
+  This module provides a video input source compatible with the Livebook environment.
+  This module returns raw video data in H264 format.
+  For more practical usage, see `Membrane.Kino.Input.VideoSource`.
+  """
+  use Membrane.Source
+
+  alias Membrane.Kino.Input, as: KinoInput
+
+  alias Membrane.{
+    Buffer,
+    RemoteStream,
+    Time
+  }
+
+  defmodule KinoSourceAlreadyOccupiedError do
+    defexception [:message]
+  end
+
+  def_options kino: [
+                spec: KinoInput.t(),
+                description: "Membrane.Kino.Input.t() handle"
+              ]
+
+  def_output_pad :output,
+    accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
+    availability: :on_request,
+    flow_control: :push
+
+  @impl true
+  def handle_init(_ctx, options) do
+    {[], %{kino: options.kino, tracks: %{}, output_ref: nil}}
+  end
+
+  @impl true
+  def handle_setup(ctx, state) do
+    pid = self()
+
+    case KinoInput.register(state.kino, pid) do
+      :ok ->
+        :ok
+
+      {:error, :already_registered} ->
+        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
+    end
+
+    Membrane.ResourceGuard.register(
+      ctx.resource_guard,
+      fn -> :ok = KinoInput.unregister(state.kino, pid) end
+    )
+
+    {[], state}
+  end
+
+  @impl true
+  def handle_playing(_ctx, state) do
+    {[stream_format: {state.output_ref, %RemoteStream{content_format: :H264, type: :bytestream}}],
+     state}
+  end
+
+  @impl true
+  def handle_info({:audio_video_frame, info, binary}, ctx, state) do
+    duration = Map.get(info, "duration", 0)
+
+    buffer = %Buffer{
+      payload: binary,
+      metadata: %{
+        duration: Time.milliseconds(duration)
+      }
+    }
+
+    output_pad = Map.get(ctx.pads, state.output_ref)
+
+    if output_pad.end_of_stream? do
+      {[], state}
+    else
+      {[buffer: {state.output_ref, buffer}], state}
+    end
+  end
+
+  @impl true
+  def handle_info({:framerate, framerate}, _ctx, state) do
+    {[notify_parent: %{framerate: framerate}], state}
+  end
+
+  @impl true
+  def handle_info(:end_of_stream, _ctx, state) do
+    {[{:end_of_stream, state.output_ref}], state}
+  end
+
+  @impl true
+  def handle_pad_added({_, :output, id} = pad, _ctx, state) do
+    {[], %{state | output_ref: pad, tracks: Map.put(state.tracks, pad, Track)}}
+  end
+end

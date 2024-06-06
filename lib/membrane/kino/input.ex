@@ -126,6 +126,14 @@ defmodule Membrane.Kino.Input do
     {:noreply, ctx}
   end
 
+  def handle_event("audio_video_frame", {:binary, info, binary}, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:audio_video_frame, info, binary})
+    end
+
+    {:noreply, ctx}
+  end
+
   @impl true
   def handle_event("recording_started", _info, ctx) do
     {:noreply, ctx}
