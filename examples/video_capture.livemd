@@ -9,9 +9,9 @@ Mix.install([
   {:membrane_kino_plugin, path: ".."},
   # livebook doesn't cooperate
   {:membrane_raw_video_format, "~> 0.3.0"},
-  {:membrane_realtimer_plugin, "~> 0.9.0"},
   {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
-  {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"}
+  {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
+  {:membrane_h264_rgb_plugin, path: "../../membrane_h264_rgb_plugin"}
 ])
 ```
 
@@ -25,13 +25,14 @@ import Membrane.ChildrenSpec
 alias Membrane.Time
 alias Membrane.RCPipeline, as: RC
 
-framerate = 30
+width = 1000
+height = 1000
 
 kino_input =
   Membrane.Kino.Input.new(
     audio: false,
-    video: %{width: 100, height: 100, framerate: framerate},
-    flush_time: Time.milliseconds(20)
+    video: %{desired_width: width, desired_height: height},
+    flush_time: Time.milliseconds(10)
   )
 
 kino_player =
@@ -43,12 +44,12 @@ kino_player =
   )
 
 video_loopback =
-  child(:input, %Membrane.Kino.Input.VideoSource{
-    kino: kino_input,
-    framerate: %{framerate: {framerate, 1}},
-    resolution: %{width: 100, height: 100}
-    # scale: true
-  })
+  child(:video_source, %Membrane.Kino.Input.VideoSource{kino: kino_input})
+  # |> child(:rgb_decoder, %Membrane.H264_RGB.Decoder{
+  # resolution: %{width: width, height: height}
+  # resolution: :native
+  # })
+  # |> child(:rgb_encoder, Membrane.H264_RGB.Encoder)
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 

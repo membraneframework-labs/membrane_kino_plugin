@@ -48,6 +48,7 @@ defmodule Membrane.Kino.Mixfile do
       {:membrane_realtimer_plugin, "~> 0.9.0"},
       {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
       {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
+
       # Testing
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_raw_video_format, "~> 0.3.0"},

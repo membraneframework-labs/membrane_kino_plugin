@@ -7,30 +7,13 @@ defmodule Membrane.Kino.Input.VideoSource do
   """
   use Membrane.Bin
 
+  alias Membrane.Funnel
   alias Membrane.H264
   alias Membrane.Kino
 
   def_options kino: [
                 spec: Membrane.Kino.Input.t(),
                 description: "Membrane.Kino.Player handle."
-              ],
-              framerate: [
-                spec: H264.framerate(),
-                default: %{framerate: {30, 1}},
-                description:
-                  "This should be set to the same value as framerate provided to Membrane.Kino.Input to ensure correct timestamps"
-              ],
-              resolution: [
-                spec: %{width: non_neg_integer(), height: non_neg_integer()},
-                default: %{width: 1920, height: 1080},
-                description:
-                  "Desired output resolution. If it cannot be acheived natively the video will be scaled."
-              ],
-              scale: [
-                spec: boolean(),
-                default: false,
-                description:
-                  "To scale or not to scale."
               ]
 
   def_output_pad :output,
@@ -39,21 +22,30 @@ defmodule Membrane.Kino.Input.VideoSource do
 
   @impl true
   def handle_init(_ctx, options) do
-    structure = if options.scale do
-      child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
-      |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
-      # |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
-      |> child(:decoder, Membrane.H264.FFmpeg.Decoder)
-      |> child(:scaler, %Membrane.FFmpeg.SWScale.Scaler{output_width: options.resolution.width, output_height: options.resolution.height})
-      |> child(:encoder, %Membrane.H264.FFmpeg.Encoder{profile: :baseline})
+    spec = [
+      child(:remote_stream_video, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino}),
+      child(:funnel_out, Funnel)
       |> bin_output()
-    else
-      child(:source, %Kino.Input.Source.RemoteStreamVideo{kino: options.kino})
-      |> child(:parser, %H264.Parser{generate_best_effort_timestamps: options.framerate})
-      |> bin_output()
-    end
+    ]
 
+    {[spec: spec], %{}}
+  end
 
-    {[spec: structure], %{}}
+  @impl true
+  def handle_child_notification(%{framerate: framerate}, :remote_stream_video, _ctx, state) do
+    spec =
+      get_child(:remote_stream_video)
+      |> via_out(Pad.ref(:output))
+      |> child(:parser, %H264.Parser{
+        generate_best_effort_timestamps: %{framerate: {framerate, 1}}
+      })
+      |> get_child(:funnel_out)
+
+    {[spec: spec, setup: :complete], state}
+  end
+
+  @impl true
+  def handle_setup(_ctx, _state) do
+    {[setup: :incomplete], %{}}
   end
 end

@@ -48,7 +48,14 @@ defmodule Membrane.Kino.Player do
   """
   @spec new(video: boolean(), audio: boolean(), flush_time: Time.t()) :: t()
   def new(opts) do
-    opts = Keyword.validate!(opts, video: false, mirror: false, audio: false, flush_time: Time.milliseconds(0))
+    opts =
+      Keyword.validate!(opts,
+        video: false,
+        mirror: false,
+        audio: false,
+        flush_time: Time.milliseconds(0)
+      )
+
     type = Keyword.take(opts, [:video, :audio])
     mirror = Keyword.get(opts, :mirror)
 

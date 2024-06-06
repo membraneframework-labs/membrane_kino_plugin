@@ -8,7 +8,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
   require Membrane.Logger
 
   alias Kino.JS.Live, as: KinoPlayer
-  alias Membrane.{AAC, H264, RemoteStream, Realtimer}
+  alias Membrane.{AAC, H264, RemoteStream}
 
   alias Membrane.Kino
 
@@ -45,9 +45,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
         :video ->
           bin_input()
           |> via_in(:video)
-          # |> child(:realtimer, Realtimer)
           |> child(:player, %Kino.Player.Sink{kino: kino})
-
       end
 
     {[spec: structure], %{}}

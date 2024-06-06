@@ -58,13 +58,12 @@ defmodule Membrane.Kino.Input do
 
   defp sanitize_video_parameters(%{} = video) do
     video
-    |> Map.put_new(:width, 640)
-    |> Map.put_new(:height, 480)
-    |> Map.put_new(:framerate, 30)
+    |> Map.put_new(:desired_width, 1920)
+    |> Map.put_new(:desired_height, 1080)
   end
 
   defp sanitize_video_parameters(true = _video) do
-    %{width: 640, height: 480, framerate: 30}
+    %{width: 640, height: 480}
   end
 
   defp sanitize_video_parameters(_video), do: false
@@ -104,6 +103,15 @@ defmodule Membrane.Kino.Input do
   def handle_event("audio_frame", {:binary, info, binary}, ctx) do
     if ctx.assigns.client do
       send(ctx.assigns.client, {:audio_frame, info, binary})
+    end
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("framerate", framerate, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:framerate, framerate})
     end
 
     {:noreply, ctx}
