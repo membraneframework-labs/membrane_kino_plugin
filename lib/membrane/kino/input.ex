@@ -63,7 +63,7 @@ defmodule Membrane.Kino.Input do
   end
 
   defp sanitize_video_parameters(true = _video) do
-    %{width: 640, height: 480}
+    %{desired_width: 1920, desired_height: 1080}
   end
 
   defp sanitize_video_parameters(_video), do: false
