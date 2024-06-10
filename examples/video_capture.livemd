@@ -34,7 +34,7 @@ height = 100
 kino_input =
   Membrane.Kino.Input.new(
     audio: true,
-    video: %{desired_width: width, desired_height: height},
+    video: true,
     flush_time: Time.milliseconds(10)
   )
 
@@ -55,12 +55,12 @@ kino_player =
 
 video_loopback = [
   child(:source, %Membrane.Kino.Input.SourceBin{kino: kino_input})
-  |> via_out(:audio)
-  |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers),
-  get_child(:source)
   |> via_out(:video)
   |> via_in(:video)
-  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player}),
+  get_child(:source)
+  |> via_out(:audio)
+  |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers)
 ]
 
 :ok

@@ -23,14 +23,19 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
                 description: "Membrane.Kino.Input.t() handle"
               ]
 
-  def_output_pad :output,
+  def_output_pad :video,
+    accepted_format: %RemoteStream{content_format: :H264, type: :bytestream},
+    availability: :on_request,
+    flow_control: :push
+
+  def_output_pad :audio,
     accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
     availability: :always,
     flow_control: :push
 
   @impl true
   def handle_init(_ctx, options) do
-    {[], %{kino: options.kino, tracks: %{}, output_ref: nil}}
+    {[], %{kino: options.kino, tracks: %{}, video_ref: nil}}
   end
 
   @impl true
@@ -55,12 +60,16 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {[stream_format: {:output,  %RemoteStream{content_format: :WEBM, type: :bytestream}}],
+    {[
+      stream_format: {state.video_ref, %RemoteStream{content_format: :H264, type: :bytestream}},
+      stream_format: {:audio, %RemoteStream{content_format: :WEBM, type: :bytestream}}
+    ],
      state}
   end
 
   @impl true
-  def handle_info({:audio_video_frame, info, binary}, ctx, state) do
+  def handle_info({:audio_frame, info, binary}, _ctx, state) do
+    # IO.inspect("remote stream audio frame")
     duration = Map.get(info, "duration", 0)
 
     buffer = %Buffer{
@@ -70,11 +79,25 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
       }
     }
 
-    if ctx.pads.output.end_of_stream? do
+    if state.video_ref == nil do
       {[], state}
     else
-      {[buffer: {:output, buffer}], state}
+      {[buffer: {:audio, buffer}], state}
     end
+  end
+
+  @impl true
+  def handle_info({:video_frame, info, binary}, _ctx, state) do
+    duration = Map.get(info, "duration", 0)
+
+    buffer = %Buffer{
+      payload: binary,
+      metadata: %{
+        duration: Time.milliseconds(duration)
+      }
+    }
+
+    {[buffer: {state.video_ref, buffer}], state}
   end
 
   @impl true
@@ -85,5 +108,10 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
   @impl true
   def handle_info(:end_of_stream, _ctx, state) do
     {[{:end_of_stream, :output}], state}
+  end
+
+  @impl true
+  def handle_pad_added(pad, _ctx, state) do
+    {[], %{state | video_ref: pad, tracks: Map.put(state.tracks, pad, Track)}}
   end
 end

@@ -31,11 +31,15 @@ defmodule Membrane.Kino.Input.SourceBin do
   @impl true
   def handle_init(_ctx, options) do
     spec = [
-      child(:remote_stream, %Kino.Input.Source.RemoteStream{kino: options.kino})
-      |> child(:demuxer, Matroska.Demuxer),
+      # video
+      child(:remote_stream, %Kino.Input.Source.RemoteStream{kino: options.kino}),
+      child(:funnel_video, Funnel) |> bin_output(:video),
 
-      child(:video_funnel, Funnel) |> bin_output(:video),
-      child(:audio_funnel, Funnel) |> bin_output(:audio)
+      # audio
+      get_child(:remote_stream)
+      |> via_out(:audio)
+      |> child(:demuxer, Matroska.Demuxer),
+      child(:funnel_audio, Funnel) |> bin_output(:audio)
     ]
 
     {[spec: spec], %{framerate: nil, tracks: 2}}
@@ -43,40 +47,36 @@ defmodule Membrane.Kino.Input.SourceBin do
 
   @impl true
   def handle_child_notification(%{framerate: framerate}, :remote_stream, _ctx, state) do
-    state = Map.put(state, :framerate, framerate)
-    {[], state}
+    spec =
+      get_child(:remote_stream)
+      |> via_out(Pad.ref(:video))
+      |> child(:parser, %H264.Parser{
+        generate_best_effort_timestamps: %{framerate: {framerate, 1}}
+      })
+      |> get_child(:funnel_video)
+
+    {[spec: spec, setup: :complete], state}
+    # {[spec: spec], state}
   end
 
-  def handle_child_notification({:new_track, {track_id, track_info}}, :demuxer, _context, state) do
-    IO.inspect(track_info.codec, label: "new_track")
-    cond do
-      track_info.codec == :opus ->
+  @impl true
+  def handle_child_notification({:new_track, {track_id, track_info}}, :demuxer, _ctx, state) do
+    case track_info.codec do
+      :opus ->
         structure =
           get_child(:demuxer)
           |> via_out(Pad.ref(:output, track_id))
-          |> get_child(:audio_funnel)
+          |> get_child(:funnel_audio)
 
         {[spec: structure], state}
 
-      track_info.codec == :h264 ->
-        structure =
-          get_child(:demuxer)
-          |> via_out(Pad.ref(:output, track_id))
-          |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
-          |> child(:parser, %H264.Parser{
-            generate_best_effort_timestamps: %{framerate: {30, 1}},
-          })
-          |> get_child(:video_funnel)
-
-        {[spec: structure], state}
-
-      true ->
-        raise "Unsupported codec #{track_info.codec}"
+      _else ->
+        raise "Unsupported codec: #{inspect(track_info.codec)}"
     end
   end
 
-  # @impl true
-  # def handle_setup(_ctx, _state) do
-  #   {[setup: :incomplete], %{}}
-  # end
+  @impl true
+  def handle_setup(_ctx, _state) do
+    {[setup: :incomplete], %{}}
+  end
 end
