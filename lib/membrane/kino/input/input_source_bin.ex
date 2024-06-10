@@ -38,21 +38,23 @@ defmodule Membrane.Kino.Input.SourceBin do
       child(:audio_funnel, Funnel) |> bin_output(:audio)
     ]
 
-    {[spec: spec], %{framerate: nil}}
+    {[spec: spec], %{framerate: nil, tracks: 2}}
   end
 
   @impl true
   def handle_child_notification(%{framerate: framerate}, :remote_stream, _ctx, state) do
-    {[], %{state | framerate: framerate}}
+    state = Map.put(state, :framerate, framerate)
+    {[], state}
   end
 
   def handle_child_notification({:new_track, {track_id, track_info}}, :demuxer, _context, state) do
+    IO.inspect(track_info.codec, label: "new_track")
     cond do
       track_info.codec == :opus ->
         structure =
           get_child(:demuxer)
           |> via_out(Pad.ref(:output, track_id))
-          |> child(:audio_funnel)
+          |> get_child(:audio_funnel)
 
         {[spec: structure], state}
 
@@ -60,10 +62,12 @@ defmodule Membrane.Kino.Input.SourceBin do
         structure =
           get_child(:demuxer)
           |> via_out(Pad.ref(:output, track_id))
+          |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
           |> child(:parser, %H264.Parser{
-            generate_best_effort_timestamps: %{framerate: {state.framerate, 1}}
+            generate_best_effort_timestamps: %{framerate: {30, 1}},
+            output_stream_structure: :avc3
           })
-          |> child(:video_funnel, Funnel)
+          |> get_child(:video_funnel)
 
         {[spec: structure], state}
 
@@ -72,8 +76,8 @@ defmodule Membrane.Kino.Input.SourceBin do
     end
   end
 
-  @impl true
-  def handle_setup(_ctx, _state) do
-    {[setup: :incomplete], %{}}
-  end
+  # @impl true
+  # def handle_setup(_ctx, _state) do
+  #   {[setup: :incomplete], %{}}
+  # end
 end

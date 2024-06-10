@@ -25,7 +25,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   def_output_pad :output,
     accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
-    availability: :on_request,
+    availability: :always,
     flow_control: :push
 
   @impl true
@@ -55,7 +55,7 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {[stream_format: {state.output_ref, %RemoteStream{content_format: :H264, type: :bytestream}}],
+    {[stream_format: {:output,  %RemoteStream{content_format: :WEBM, type: :bytestream}}],
      state}
   end
 
@@ -70,12 +70,10 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
       }
     }
 
-    output_pad = Map.get(ctx.pads, state.output_ref)
-
-    if output_pad.end_of_stream? do
+    if ctx.pads.output.end_of_stream? do
       {[], state}
     else
-      {[buffer: {state.output_ref, buffer}], state}
+      {[buffer: {:output, buffer}], state}
     end
   end
 
@@ -86,11 +84,6 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   @impl true
   def handle_info(:end_of_stream, _ctx, state) do
-    {[{:end_of_stream, state.output_ref}], state}
-  end
-
-  @impl true
-  def handle_pad_added({_, :output, id} = pad, _ctx, state) do
-    {[], %{state | output_ref: pad, tracks: Map.put(state.tracks, pad, Track)}}
+    {[{:end_of_stream, :output}], state}
   end
 end

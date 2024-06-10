@@ -10,7 +10,10 @@ Mix.install([
   # livebook doesn't cooperate
   {:membrane_raw_video_format, "~> 0.3.0"},
   {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
+  {:membrane_funnel_plugin, "~> 0.9.0"},
   {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
+  {:membrane_fake_plugin, "~> 0.11.0"},
+  {:membrane_matroska_plugin, "~> 0.5.1"},
   {:membrane_h264_rgb_plugin, path: "../../membrane_h264_rgb_plugin"}
 ])
 ```
@@ -37,21 +40,28 @@ kino_input =
 
 kino_player =
   Membrane.Kino.Player.new(
-    audio: true,
+    audio: false,
     video: true,
     mirror: true,
     flush_time: Time.milliseconds(10)
   )
 
-video_loopback =
-  child(:source, %Membrane.Kino.Input.VideoSource{kino: kino_input})
-  # |> child(:rgb_decoder, %Membrane.H264_RGB.Decoder{
-  # resolution: %{width: width, height: height}
-  # resolution: :native
-  # })
-  # |> child(:rgb_encoder, Membrane.H264_RGB.Encoder)
+# rgb bin example
+# |> child(:rgb_decoder, %Membrane.H264_RGB.Decoder{
+# resolution: %{width: width, height: height}
+# resolution: :native
+# })
+# |> child(:rgb_encoder, Membrane.H264_RGB.Encoder)
+
+video_loopback = [
+  child(:source, %Membrane.Kino.Input.SourceBin{kino: kino_input})
+  |> via_out(:audio)
+  |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers),
+  get_child(:source)
+  |> via_out(:video)
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+]
 
 :ok
 ```
