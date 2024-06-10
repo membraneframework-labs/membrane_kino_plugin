@@ -65,7 +65,6 @@ defmodule Membrane.Kino.Input.SourceBin do
           |> child(%Membrane.Debug.Filter{handle_buffer: &IO.inspect/1})
           |> child(:parser, %H264.Parser{
             generate_best_effort_timestamps: %{framerate: {30, 1}},
-            output_stream_structure: :avc3
           })
           |> get_child(:video_funnel)
 
