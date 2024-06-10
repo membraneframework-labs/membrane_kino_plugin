@@ -16,7 +16,14 @@ Mix.install([
   {:membrane_raw_audio_format, "~> 0.12.0"},
   {:membrane_matroska_plugin, "~> 0.5.1"},
   {:membrane_portaudio_plugin, "~> 0.19.2"},
-  {:membrane_ffmpeg_swresample_plugin, "~> 0.20.2"}
+  {:membrane_ffmpeg_swresample_plugin, "~> 0.20.2"},
+  {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
+  {:membrane_fake_plugin, "~> 0.11.0"},
+  {:membrane_raw_video_format, "~> 0.3.0"}
+
+  # {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
+  # {:membrane_funnel_plugin, "~> 0.9.0"},
+  # {:membrane_matroska_plugin, "~> 0.5.1"},
 ])
 ```
 
