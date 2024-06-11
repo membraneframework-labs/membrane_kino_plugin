@@ -22,27 +22,18 @@ defmodule Membrane.Kino.Input.SourceBin do
 
   def_output_pad :video,
     accepted_format: H264,
-    availability: :always
+    availability: :on_request
 
   def_output_pad :audio,
     accepted_format: Opus,
-    availability: :always
+    availability: :on_request
 
   @impl true
   def handle_init(_ctx, options) do
-    spec = [
-      # video
-      child(:remote_stream, %Kino.Input.Source.RemoteStream{kino: options.kino}),
-      child(:funnel_video, Funnel) |> bin_output(:video),
+    spec =
+      child(:remote_stream, %Kino.Input.Source.RemoteStream{kino: options.kino})
 
-      # audio
-      get_child(:remote_stream)
-      |> via_out(:audio)
-      |> child(:demuxer, Matroska.Demuxer),
-      child(:funnel_audio, Funnel) |> bin_output(:audio)
-    ]
-
-    {[spec: spec], %{framerate: nil, tracks: 2}}
+    {[spec: spec], %{framerate: nil, tracks: %{}}}
   end
 
   @impl true
@@ -54,9 +45,7 @@ defmodule Membrane.Kino.Input.SourceBin do
         generate_best_effort_timestamps: %{framerate: {framerate, 1}}
       })
       |> get_child(:funnel_video)
-
-    {[spec: spec, setup: :complete], state}
-    # {[spec: spec], state}
+    {[spec: spec],  %{state | framerate: framerate}}
   end
 
   @impl true
@@ -71,12 +60,32 @@ defmodule Membrane.Kino.Input.SourceBin do
         {[spec: structure], state}
 
       _else ->
-        raise "Unsupported codec: #{inspect(track_info.codec)}"
+        raise "Unsupported audio codec: #{inspect(track_info.codec)}"
     end
   end
 
   @impl true
-  def handle_setup(_ctx, _state) do
-    {[setup: :incomplete], %{}}
+  def handle_pad_added({_, name, _ref} = pad, _ctx, state) do
+    # todo check if pads already exist
+    spec = case name do
+      :audio ->
+        [
+          get_child(:remote_stream)
+          |> via_out(:audio)
+          |> child(:demuxer, Matroska.Demuxer),
+          child(:funnel_audio, Funnel) |> bin_output(pad),
+        ]
+
+      :video ->
+        child(:funnel_video, Funnel)
+        |> bin_output(pad)
+
+      true ->
+        raise "adding unknown pad"
+    end
+
+    {[spec: spec], %{state | tracks: Map.put(state.tracks, pad, Track)}}
+
   end
+
 end

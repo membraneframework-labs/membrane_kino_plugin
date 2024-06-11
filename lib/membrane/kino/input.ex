@@ -174,6 +174,11 @@ defmodule Membrane.Kino.Input do
     end
   end
 
+  @impl true
+  def handle_call({:get_type}, _sender, ctx) do
+    {:reply, ctx.assigns.info.type, ctx}
+  end
+
   defp unregister_listener(from, ctx) do
     if ctx.assigns.client in [from, nil] do
       {:ok, assign(ctx, client: nil)}
@@ -192,4 +197,6 @@ defmodule Membrane.Kino.Input do
         raise InputError, message: "Unexpected DOWN message"
     end
   end
+
+  #
 end

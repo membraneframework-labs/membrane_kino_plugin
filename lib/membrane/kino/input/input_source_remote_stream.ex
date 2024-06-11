@@ -30,12 +30,23 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   def_output_pad :audio,
     accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
-    availability: :always,
+    availability: :on_request,
     flow_control: :push
 
   @impl true
   def handle_init(_ctx, options) do
-    {[], %{kino: options.kino, tracks: %{}, video_ref: nil}}
+    kino_mode = Kino.JS.Live.call(options.kino, {:get_type})
+
+    mode = cond do
+      kino_mode.audio and kino_mode.video ->
+        [:audio, :video]
+      kino_mode.audio ->
+        [:audio]
+      kino_mode.video ->
+        [:video]
+    end
+
+    {[], %{kino: options.kino, tracks: %{}, mode: mode}}
   end
 
   @impl true
@@ -60,16 +71,29 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {[
-      stream_format: {state.video_ref, %RemoteStream{content_format: :H264, type: :bytestream}},
-      stream_format: {:audio, %RemoteStream{content_format: :WEBM, type: :bytestream}}
-    ],
-     state}
+    audio_pad = get_pad(:audio, state)
+    video_pad = get_pad(:video, state)
+
+    actions = cond do
+      audio_pad != nil and video_pad != nil ->
+        [stream_format: {audio_pad, %RemoteStream{content_format: :WEBM, type: :bytestream}},
+        stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}}]
+
+      audio_pad != nil ->
+        [stream_format: {audio_pad, %RemoteStream{content_format: :WEBM, type: :bytestream}}]
+
+      video_pad != nil ->
+        [stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}}]
+
+      true ->
+        []
+    end
+
+    {actions, state}
   end
 
   @impl true
   def handle_info({:audio_frame, info, binary}, _ctx, state) do
-    # IO.inspect("remote stream audio frame")
     duration = Map.get(info, "duration", 0)
 
     buffer = %Buffer{
@@ -78,16 +102,16 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
         duration: Time.milliseconds(duration)
       }
     }
-
-    if state.video_ref == nil do
+    audio_pad = get_pad(:audio, state)
+    if audio_pad == nil do
       {[], state}
     else
-      {[buffer: {:audio, buffer}], state}
+      {[buffer: {audio_pad, buffer}], state}
     end
   end
 
   @impl true
-  def handle_info({:video_frame, info, binary}, _ctx, state) do
+  def handle_info({:video_frame, info, binary}, ctx, state) do
     duration = Map.get(info, "duration", 0)
 
     buffer = %Buffer{
@@ -96,8 +120,21 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
         duration: Time.milliseconds(duration)
       }
     }
+    video_pad = get_pad(:video, state)
 
-    {[buffer: {state.video_ref, buffer}], state}
+    if video_pad != nil do
+      %Membrane.Element.PadData{stream_format: format} = Map.get(ctx.pads, video_pad)
+
+      stream_format = if format == nil do
+        [stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}}]
+      else
+        []
+      end
+
+      {stream_format ++ [buffer: {video_pad, buffer}], state}
+    else
+      {[], state}
+    end
   end
 
   @impl true
@@ -111,7 +148,24 @@ defmodule Membrane.Kino.Input.Source.RemoteStream do
   end
 
   @impl true
-  def handle_pad_added(pad, _ctx, state) do
-    {[], %{state | video_ref: pad, tracks: Map.put(state.tracks, pad, Track)}}
+  def handle_pad_added({_, name, _ref} = pad, _ctx, state) do
+
+    if get_pad(name, state) != nil do
+      raise "Pad #{name} for Kino.Input.Source.RemoteStream already exists."
+    end
+
+    if not Enum.member?(state.mode, name) do
+      raise "Pad #{name} not allowed for Kino.Input.Source.RemoteStream."
+    end
+
+    {[], %{state | tracks: Map.put(state.tracks, pad, Track)}}
+  end
+
+  defp get_pad(target, state) do
+    state.tracks
+      |> Map.keys()
+      |> Enum.filter(fn {_, pad_name, _} -> pad_name == target end)
+      |> Enum.map(fn pad -> pad end)
+      |> List.first()
   end
 end

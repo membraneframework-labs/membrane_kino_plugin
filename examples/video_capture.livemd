@@ -48,7 +48,7 @@ kino_input =
 kino_player =
   Membrane.Kino.Player.new(
     audio: true,
-    video: false,
+    video: true,
     mirror: true,
     flush_time: Time.milliseconds(10)
   )
@@ -64,17 +64,16 @@ loopback = [
   # video
   child(:source, %Membrane.Kino.Input.SourceBin{kino: kino_input})
   |> via_out(:video)
-  |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers),
-  # |> via_in(:video)
-  # |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player}),
+  |> via_in(:video)
+  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player}),
+
   # audio
   get_child(:source)
   |> via_out(:audio)
   |> child(:from_opus, Opus.Decoder)
   |> child(:to_aac, AAC.FDK.Encoder)
   |> via_in(:audio)
-  # |> get_child(:player)
-  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
+  |> get_child(:player)
 ]
 
 # |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers)
