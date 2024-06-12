@@ -35,7 +35,7 @@ defmodule Membrane.Kino.Player.Bin.Sink do
     structure =
       case type do
         :both ->
-          demuxer_structure(kino)
+          raise "Player bin sink cannot handle MP4 yet. Membrane.MP4 does not support depayloader yet."
 
         :audio ->
           bin_input()
@@ -49,9 +49,5 @@ defmodule Membrane.Kino.Player.Bin.Sink do
       end
 
     {[spec: structure], %{}}
-  end
-
-  defp demuxer_structure(_kino) do
-    raise "Player bin sink cannot handle MP4 yet. Membrane.MP4 does not support depayloader yet."
   end
 end

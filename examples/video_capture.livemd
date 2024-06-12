@@ -7,16 +7,9 @@ Logger.configure(level: :error)
 Mix.install([
   {:membrane_core, "~> 1.0"},
   {:membrane_kino_plugin, path: ".."},
-  # livebook doesn't cooperate
-  {:membrane_raw_video_format, "~> 0.3.0"},
-  {:membrane_ffmpeg_swscale_plugin, "~> 0.15.1"},
-  {:membrane_funnel_plugin, "~> 0.9.0"},
-  {:membrane_h264_ffmpeg_plugin, "~> 0.31.6"},
-  {:membrane_fake_plugin, "~> 0.11.0"},
   {:membrane_matroska_plugin, "~> 0.5.1"},
   {:membrane_opus_plugin, "~> 0.20.2"},
-  {:membrane_aac_fdk_plugin, "~> 0.18.8"},
-  {:membrane_h264_rgb_plugin, path: "../../membrane_h264_rgb_plugin"}
+  {:membrane_aac_fdk_plugin, "~> 0.18.8"}
 ])
 ```
 
@@ -33,10 +26,10 @@ alias Membrane.{
   AAC
 }
 
-alias Membrane.RCPipeline, as: RC
+alias Membrane.RCPipeline
 
-width = 100
-height = 100
+width = 1920
+height = 1080
 
 kino_input =
   Membrane.Kino.Input.new(
@@ -53,20 +46,12 @@ kino_player =
     flush_time: Time.milliseconds(10)
   )
 
-# rgb bin example
-# |> child(:rgb_decoder, %Membrane.H264_RGB.Decoder{
-# resolution: %{width: width, height: height}
-# resolution: :native
-# })
-# |> child(:rgb_encoder, Membrane.H264_RGB.Encoder)
-
 loopback = [
   # video
-  child(:source, %Membrane.Kino.Input.SourceBin{kino: kino_input})
+  child(:source, %Membrane.Kino.Input.Bin.Source{kino: kino_input})
   |> via_out(:video)
   |> via_in(:video)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player}),
-
   # audio
   get_child(:source)
   |> via_out(:audio)
@@ -76,16 +61,14 @@ loopback = [
   |> get_child(:player)
 ]
 
-# |> child(:fake_audio_sink, Membrane.Fake.Sink.Buffers)
-
 :ok
 ```
 
 ## Playing pipeline
 
 ```elixir
-pipeline = RC.start!()
-RC.exec_actions(pipeline, spec: loopback)
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: loopback)
 
 Kino.render(kino_input)
 kino_player

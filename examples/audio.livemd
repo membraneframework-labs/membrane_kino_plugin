@@ -24,7 +24,7 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.RCPipeline, as: RC
+alias Membrane.RCPipeline
 alias Membrane.AAC.Parser
 
 input_filepath = "./res/input.aac"
@@ -42,7 +42,7 @@ structure =
 ## Playing pipeline
 
 ```elixir
-pipeline = RC.start!()
-RC.exec_actions(pipeline, spec: structure)
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: structure)
 kino
 ```

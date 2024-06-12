@@ -24,7 +24,7 @@ alias Membrane.{
 }
 
 alias Membrane.H264.Parser, as: H264_Parser
-alias Membrane.RCPipeline, as: RC
+alias Membrane.RCPipeline
 
 video_filepath = "./res/input_baseline.h264"
 kino = Membrane.Kino.Player.new(video: true)
@@ -41,7 +41,7 @@ structure =
 ## Playing pipeline
 
 ```elixir
-pipeline = RC.start!()
-RC.exec_actions(pipeline, spec: structure)
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: structure)
 kino
 ```
