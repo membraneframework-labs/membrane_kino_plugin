@@ -1,6 +1,6 @@
 defmodule Membrane.Kino.Input do
   @moduledoc """
-  Kino component capable of capturing audio from the microphone or video from camera.
+  Kino component capable of capturing audio from the microphone or video from the camera.
 
   Element provides synchronous API for sending frames to the different processes:
   ```elixir
@@ -175,7 +175,7 @@ defmodule Membrane.Kino.Input do
   end
 
   @impl true
-  def handle_call({:get_type}, _sender, ctx) do
+  def handle_call(:get_type, _sender, ctx) do
     {:reply, ctx.assigns.info.type, ctx}
   end
 
@@ -197,6 +197,4 @@ defmodule Membrane.Kino.Input do
         raise InputError, message: "Unexpected DOWN message"
     end
   end
-
-  #
 end

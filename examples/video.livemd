@@ -2,7 +2,7 @@
 
 ```elixir
 File.cd(__DIR__)
-Logger.configure(level: :error)
+Logger.configure(level: :warning)
 
 Mix.install([
   {:membrane_core, "~> 1.0"},
@@ -23,7 +23,7 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.H264.Parser, as: H264_Parser
+alias Membrane.H264.Parser, as: H264Parser
 alias Membrane.RCPipeline
 
 video_filepath = "./res/input_baseline.h264"
@@ -31,7 +31,7 @@ kino = Membrane.Kino.Player.new(video: true)
 
 structure =
   child(:file_input, %File.Source{location: video_filepath})
-  |> child(:parser, %H264_Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
+  |> child(:parser, %H264Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
   |> via_in(:video)
   |> child(:video_player, %Kino.Player.Sink{kino: kino})
 

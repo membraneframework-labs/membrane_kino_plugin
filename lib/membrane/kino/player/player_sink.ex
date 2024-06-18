@@ -4,7 +4,36 @@ defmodule Membrane.Kino.Player.Sink do
 
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Player` element into the Membrane pipeline and shows video in livebook's cells.
+
+  ## Example
+  ``` elixir
+  kino = Membrane.Kino.Player.new(video: true)
+
+  import Membrane.ChildrenSpec
+
+  alias Membrane.{
+    File,
+    RawVideo,
+    Kino
+  }
+
+  alias Membrane.H264.FFmpeg.Parser
+  alias Membrane.RCPipeline
+
+  input_filepath = "path/to/file.h264"
+
+  structure =
+    child(:file_input, %File.Source{location: input_filepath})
+    |> child(:parser, %Parser{framerate: {60, 1}})
+    |> via_in(:video)
+    |> child(:video_player, %Kino.Player.Sink{kino: kino})
+
+  pipeline = RCPipeline.start!()
+  RCPipeline.exec_actions(pipeline, spec: structure)
+  kino
+  ```
   """
+
   use Membrane.Sink
   require Membrane.Logger
 
@@ -43,10 +72,6 @@ defmodule Membrane.Kino.Player.Sink do
     def added?(%__MODULE__{added: added}) do
       added
     end
-  end
-
-  defmodule KinoSourceAlreadyOccupiedError do
-    defexception [:message]
   end
 
   def_options kino: [

@@ -1,6 +1,6 @@
 defmodule Membrane.Kino.Input.Bin.Source do
   @moduledoc """
-  This module provides audio and/or video input source compatible with the Livebook environment.
+  This module provides audio and video input source compatible with the Livebook environment.
 
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
@@ -31,16 +31,16 @@ defmodule Membrane.Kino.Input.Bin.Source do
   @impl true
   def handle_init(_ctx, options) do
     spec =
-      child(:remote_stream, %Kino.Input.Source{kino: options.kino})
+      child(:kino_input, %Kino.Input.Source{kino: options.kino})
 
     {[spec: spec], %{framerate: nil, tracks: %{}}}
   end
 
   @impl true
-  def handle_child_notification(%{framerate: framerate}, :remote_stream, _ctx, state) do
+  def handle_child_notification({:framerate, framerate}, :kino_input, _ctx, state) do
     spec =
-      get_child(:remote_stream)
-      |> via_out(Pad.ref(:video))
+      get_child(:kino_input)
+      |> via_out(:video)
       |> child(:parser, %H264.Parser{
         generate_best_effort_timestamps: %{framerate: {framerate, 1}}
       })
@@ -66,12 +66,14 @@ defmodule Membrane.Kino.Input.Bin.Source do
   end
 
   @impl true
-  def handle_pad_added({_membrane_pad, name, _ref} = pad, _ctx, state) do
+  def handle_pad_added(Pad.ref(ref) = pad, _ctx, state) do
+    name = Pad.name_by_ref(ref)
+
     spec =
       case name do
         :audio ->
           [
-            get_child(:remote_stream)
+            get_child(:kino_input)
             |> via_out(:audio)
             |> child(:demuxer, Matroska.Demuxer),
             child(:funnel_audio, Funnel) |> bin_output(pad)
@@ -80,11 +82,9 @@ defmodule Membrane.Kino.Input.Bin.Source do
         :video ->
           child(:funnel_video, Funnel)
           |> bin_output(pad)
-
-        true ->
-          raise "adding unknown pad"
       end
 
-    {[spec: spec], %{state | tracks: Map.put(state.tracks, pad, Track)}}
+    state = put_in(state.tracks[pad], Track)
+    {[spec: spec], state}
   end
 end

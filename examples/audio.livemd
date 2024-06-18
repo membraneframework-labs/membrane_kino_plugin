@@ -2,7 +2,7 @@
 
 ```elixir
 File.cd(__DIR__)
-Logger.configure(level: :error)
+Logger.configure(level: :warning)
 
 Mix.install([
   {:membrane_core, "~> 1.0"},

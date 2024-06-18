@@ -2,7 +2,7 @@
 
 ```elixir
 File.cd(__DIR__)
-Logger.configure(level: :error)
+Logger.configure(level: :warning)
 
 Mix.install([
   {:membrane_core, "~> 1.0"},
@@ -42,8 +42,8 @@ kino_player =
 play_kino_audio =
   child(:input, %Membrane.Kino.Input.Bin.Source{kino: kino_input})
   |> via_out(:audio)
-  |> child(:from_opus, Opus.Decoder)
-  |> child(:to_aac, AAC.FDK.Encoder)
+  |> child(:opus_decoder, Opus.Decoder)
+  |> child(:aac_encoder, AAC.FDK.Encoder)
   |> via_in(:audio)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 

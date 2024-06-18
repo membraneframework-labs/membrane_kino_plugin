@@ -1,6 +1,33 @@
 defmodule Membrane.Kino.Player.Bin.Sink do
   @moduledoc """
   This module provides an universal video and audio player sink compatible with the Livebook environment.
+
+  ## Example
+  ``` elixir
+  kino = Membrane.Kino.Player.new(:video)
+
+  import Membrane.ChildrenSpec
+
+  alias Membrane.{
+    File,
+    RawVideo,
+    Kino
+  }
+
+  alias Membrane.H264.FFmpeg.Parser
+  alias Membrane.RCPipeline
+
+  input_filepath = "path/to/file.h264"
+
+  structure =
+    child(:file_input, %File.Source{location: input_filepath})
+    |> child(:parser, %Parser{framerate: {60, 1}})
+    |> child(:video_player, %Kino.Player.Bin.Sink{kino: kino})
+
+  pipeline = RCPipeline.start!()
+  RCPipeline.exec_actions(pipeline, spec: structure)
+  kino
+  ```
   """
 
   use Membrane.Bin

@@ -1,6 +1,7 @@
 defmodule Membrane.Kino.Input.Source do
   @moduledoc """
   This module provides audio and video input source compatible with the Livebook environment.
+
   This module returns raw video data in H264 format and/or audio data in WEBM format (opus codec).
   For more practical usage, see `Membrane.Kino.Input.Bin.Source`.
   """
@@ -13,10 +14,6 @@ defmodule Membrane.Kino.Input.Source do
     RemoteStream,
     Time
   }
-
-  defmodule KinoSourceAlreadyOccupiedError do
-    defexception [:message]
-  end
 
   def_options kino: [
                 spec: KinoInput.t(),
@@ -35,7 +32,27 @@ defmodule Membrane.Kino.Input.Source do
 
   @impl true
   def handle_init(_ctx, options) do
-    kino_mode = Kino.JS.Live.call(options.kino, {:get_type})
+    {[], %{kino: options.kino, mode: []}}
+  end
+
+  @impl true
+  def handle_setup(ctx, state) do
+    pid = self()
+
+    case KinoInput.register(state.kino, pid) do
+      :ok ->
+        :ok
+
+      {:error, :already_registered} ->
+        raise RuntimeError, message: "Cannot register KinoInput because it is already occupied"
+    end
+
+    Membrane.ResourceGuard.register(
+      ctx.resource_guard,
+      fn -> :ok = KinoInput.unregister(state.kino, pid) end
+    )
+
+    kino_mode = Kino.JS.Live.call(state.kino, :get_type)
 
     mode =
       cond do
@@ -49,33 +66,13 @@ defmodule Membrane.Kino.Input.Source do
           [:video]
       end
 
-    {[], %{kino: options.kino, tracks: %{}, mode: mode}}
+    {[], %{state | mode: mode}}
   end
 
   @impl true
-  def handle_setup(ctx, state) do
-    pid = self()
-
-    case KinoInput.register(state.kino, pid) do
-      :ok ->
-        :ok
-
-      {:error, :already_registered} ->
-        raise KinoSourceAlreadyOccupiedError, message: "Kino source already occupied"
-    end
-
-    Membrane.ResourceGuard.register(
-      ctx.resource_guard,
-      fn -> :ok = KinoInput.unregister(state.kino, pid) end
-    )
-
-    {[], state}
-  end
-
-  @impl true
-  def handle_playing(_ctx, state) do
-    audio_pad = get_pad(:audio, state)
-    video_pad = get_pad(:video, state)
+  def handle_playing(ctx, state) do
+    audio_pad = get_pad(:audio, ctx)
+    video_pad = get_pad(:video, ctx)
 
     actions =
       cond do
@@ -109,7 +106,7 @@ defmodule Membrane.Kino.Input.Source do
       }
     }
 
-    audio_pad = get_pad(:audio, state)
+    audio_pad = get_pad(:audio, ctx)
 
     actions =
       if audio_pad != nil do
@@ -129,6 +126,8 @@ defmodule Membrane.Kino.Input.Source do
           true ->
             [buffer: {audio_pad, buffer}]
         end
+      else
+        []
       end
 
     {actions, state}
@@ -145,11 +144,11 @@ defmodule Membrane.Kino.Input.Source do
       }
     }
 
-    video_pad = get_pad(:video, state)
+    video_pad = get_pad(:video, ctx)
 
     actions =
       if video_pad != nil do
-        %{stream_format: stream_format, end_of_stream?: end_of_stream} =
+        %{stream_format: stream_format, end_of_stream?: end_of_stream?} =
           Map.get(ctx.pads, video_pad)
 
         cond do
@@ -159,12 +158,14 @@ defmodule Membrane.Kino.Input.Source do
               buffer: {video_pad, buffer}
             ]
 
-          end_of_stream ->
+          end_of_stream? ->
             []
 
           true ->
             [buffer: {video_pad, buffer}]
         end
+      else
+        []
       end
 
     {actions, state}
@@ -172,24 +173,24 @@ defmodule Membrane.Kino.Input.Source do
 
   @impl true
   def handle_info({:framerate, framerate}, _ctx, state) do
-    {[notify_parent: %{framerate: framerate}], state}
+    {[notify_parent: {:framerate, framerate}], state}
   end
 
   @impl true
-  def handle_info(:end_of_stream, _ctx, state) do
-    audio_pad = get_pad(:audio, state)
-    video_pad = get_pad(:video, state)
+  def handle_info(:end_of_stream, ctx, state) do
+    audio_pad = get_pad(:audio, ctx)
+    video_pad = get_pad(:video, ctx)
 
     actions =
       cond do
         audio_pad != nil and video_pad != nil ->
-          [{:end_of_stream, audio_pad}, {:end_of_stream, video_pad}]
+          [end_of_stream: audio_pad, end_of_stream: video_pad]
 
         audio_pad != nil ->
-          [{:end_of_stream, audio_pad}]
+          [end_of_stream: audio_pad]
 
         video_pad != nil ->
-          [{:end_of_stream, video_pad}]
+          [end_of_stream: video_pad]
 
         true ->
           []
@@ -199,23 +200,24 @@ defmodule Membrane.Kino.Input.Source do
   end
 
   @impl true
-  def handle_pad_added({_membrane_pad, name, _ref} = pad, _ctx, state) do
-    if get_pad(name, state) != nil do
-      raise "Pad #{name} for Kino.Input.Source already exists."
-    end
+  def handle_pad_added(pad, ctx, state) do
+    name = Pad.name_by_ref(pad)
+
+    # if get_pad(name,ctx,state) != nil do
+    #   raise "Pad #{name} for #{__MODULE__} already exists."
+    # end
 
     if not Enum.member?(state.mode, name) do
-      raise "Pad #{name} not allowed for Kino.Input.Source."
+      raise "Pad #{name} not allowed for #{__MODULE__}."
     end
 
-    {[], %{state | tracks: Map.put(state.tracks, pad, Track)}}
+    {[], state}
   end
 
-  defp get_pad(target, state) do
-    state.tracks
+  defp get_pad(target, ctx) do
+    ctx.pads
     |> Map.keys()
-    |> Enum.filter(fn {_membrane_pad, pad_name, _ref} -> pad_name == target end)
-    |> Enum.map(fn pad -> pad end)
+    |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == target end)
     |> List.first()
   end
 end
