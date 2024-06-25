@@ -1,6 +1,7 @@
 defmodule Membrane.Kino.Input.Source do
   @moduledoc """
   This module provides audio and video input source compatible with the Livebook environment.
+  Currently video capture works only in Chrome, audio capture in Chrome and Firefox.
 
   This module returns raw video data in H264 format and/or audio data in WEBM format (opus codec).
   For more practical usage, see `Membrane.Kino.Input.Bin.Source`.
@@ -15,18 +16,21 @@ defmodule Membrane.Kino.Input.Source do
     Time
   }
 
+  @audio_stream_format %RemoteStream{content_format: :WEBM, type: :bytestream}
+  @video_stream_format %RemoteStream{content_format: :H264, type: :bytestream}
+
   def_options kino: [
                 spec: KinoInput.t(),
                 description: "Membrane.Kino.Input.t() handle"
               ]
 
   def_output_pad :video,
-    accepted_format: %RemoteStream{content_format: :H264, type: :bytestream},
+    accepted_format: @video_stream_format,
     availability: :on_request,
     flow_control: :push
 
   def_output_pad :audio,
-    accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
+    accepted_format: @audio_stream_format,
     availability: :on_request,
     flow_control: :push
 
@@ -75,100 +79,25 @@ defmodule Membrane.Kino.Input.Source do
     video_pad = get_pad(:video, ctx)
 
     actions =
-      cond do
-        audio_pad != nil and video_pad != nil ->
-          [
-            stream_format: {audio_pad, %RemoteStream{content_format: :WEBM, type: :bytestream}},
-            stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}}
-          ]
-
-        audio_pad != nil ->
-          [stream_format: {audio_pad, %RemoteStream{content_format: :WEBM, type: :bytestream}}]
-
-        video_pad != nil ->
-          [stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}}]
-
-        true ->
-          []
-      end
+      [
+        stream_format: {audio_pad, @audio_stream_format},
+        stream_format: {video_pad, @video_stream_format}
+      ]
+      |> Enum.reject(fn {:stream_format, {pad, _stream_format}} -> pad == nil end)
 
     {actions, state}
   end
 
   @impl true
   def handle_info({:audio_frame, info, binary}, ctx, state) do
-    duration = Map.get(info, "duration", 0)
-
-    buffer = %Buffer{
-      payload: binary,
-      metadata: %{
-        duration: Time.milliseconds(duration)
-      }
-    }
-
     audio_pad = get_pad(:audio, ctx)
-
-    actions =
-      if audio_pad != nil do
-        %{stream_format: stream_format, end_of_stream?: end_of_stream} =
-          Map.get(ctx.pads, audio_pad)
-
-        cond do
-          stream_format == nil ->
-            [
-              stream_format: {audio_pad, %RemoteStream{content_format: :WEBM, type: :bytestream}},
-              buffer: {audio_pad, buffer}
-            ]
-
-          end_of_stream ->
-            []
-
-          true ->
-            [buffer: {audio_pad, buffer}]
-        end
-      else
-        []
-      end
-
-    {actions, state}
+    handle_frame(audio_pad, info, binary, @audio_stream_format, ctx, state)
   end
 
   @impl true
   def handle_info({:video_frame, info, binary}, ctx, state) do
-    duration = Map.get(info, "duration", 0)
-
-    buffer = %Buffer{
-      payload: binary,
-      metadata: %{
-        duration: Time.milliseconds(duration)
-      }
-    }
-
     video_pad = get_pad(:video, ctx)
-
-    actions =
-      if video_pad != nil do
-        %{stream_format: stream_format, end_of_stream?: end_of_stream?} =
-          Map.get(ctx.pads, video_pad)
-
-        cond do
-          stream_format == nil ->
-            [
-              stream_format: {video_pad, %RemoteStream{content_format: :H264, type: :bytestream}},
-              buffer: {video_pad, buffer}
-            ]
-
-          end_of_stream? ->
-            []
-
-          true ->
-            [buffer: {video_pad, buffer}]
-        end
-      else
-        []
-      end
-
-    {actions, state}
+    handle_frame(video_pad, info, binary, @video_stream_format, ctx, state)
   end
 
   @impl true
@@ -182,30 +111,15 @@ defmodule Membrane.Kino.Input.Source do
     video_pad = get_pad(:video, ctx)
 
     actions =
-      cond do
-        audio_pad != nil and video_pad != nil ->
-          [end_of_stream: audio_pad, end_of_stream: video_pad]
-
-        audio_pad != nil ->
-          [end_of_stream: audio_pad]
-
-        video_pad != nil ->
-          [end_of_stream: video_pad]
-
-        true ->
-          []
-      end
+      [end_of_stream: audio_pad, end_of_stream: video_pad]
+      |> Enum.reject(fn {:end_of_stream, pad} -> pad == nil end)
 
     {actions, state}
   end
 
   @impl true
-  def handle_pad_added(pad, ctx, state) do
-    name = Pad.name_by_ref(pad)
-
-    # if get_pad(name,ctx,state) != nil do
-    #   raise "Pad #{name} for #{__MODULE__} already exists."
-    # end
+  def handle_pad_added(Pad.ref(name, _ref), ctx, state) do
+    assert_pad_count(name, ctx)
 
     if not Enum.member?(state.mode, name) do
       raise "Pad #{name} not allowed for #{__MODULE__}."
@@ -217,7 +131,55 @@ defmodule Membrane.Kino.Input.Source do
   defp get_pad(target, ctx) do
     ctx.pads
     |> Map.keys()
-    |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == target end)
-    |> List.first()
+    |> Enum.find(fn pad_ref -> Pad.name_by_ref(pad_ref) == target end)
+  end
+
+  defp assert_pad_count(name, ctx) do
+    count =
+      ctx.pads
+      |> Map.keys()
+      |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
+      |> length()
+
+    if count > 1 do
+      raise "Pad #{name} for #{__MODULE__} already exists."
+    end
+
+    :ok
+  end
+
+  defp handle_frame(pad, info, binary, target_stream_format, ctx, state) do
+    duration = Map.get(info, "duration", 0)
+
+    buffer = %Buffer{
+      payload: binary,
+      metadata: %{
+        duration: Time.milliseconds(duration)
+      }
+    }
+
+    actions =
+      if pad != nil do
+        %{stream_format: stream_format, end_of_stream?: end_of_stream?} =
+          Map.get(ctx.pads, pad)
+
+        cond do
+          stream_format == nil ->
+            [
+              stream_format: {pad, target_stream_format},
+              buffer: {pad, buffer}
+            ]
+
+          end_of_stream? ->
+            []
+
+          true ->
+            [buffer: {pad, buffer}]
+        end
+      else
+        []
+      end
+
+    {actions, state}
   end
 end

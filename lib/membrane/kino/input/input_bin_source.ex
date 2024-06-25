@@ -1,6 +1,7 @@
 defmodule Membrane.Kino.Input.Bin.Source do
   @moduledoc """
   This module provides audio and video input source compatible with the Livebook environment.
+  Currently video capture works only in Chrome, audio capture in Chrome and Firefox.
 
   Livebook handles multimedia and specific media by using the Kino library and its extensions.
   This module integrate special `Membrane.Kino.Input` element into the Membrane pipeline.
@@ -9,10 +10,10 @@ defmodule Membrane.Kino.Input.Bin.Source do
 
   alias Membrane.{
     Funnel,
+    H264,
     Kino,
     Matroska,
-    Opus,
-    H264
+    Opus
   }
 
   def_options kino: [
@@ -33,7 +34,7 @@ defmodule Membrane.Kino.Input.Bin.Source do
     spec =
       child(:kino_input, %Kino.Input.Source{kino: options.kino})
 
-    {[spec: spec], %{framerate: nil, tracks: %{}}}
+    {[spec: spec], %{framerate: nil}}
   end
 
   @impl true
@@ -66,8 +67,8 @@ defmodule Membrane.Kino.Input.Bin.Source do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(ref) = pad, _ctx, state) do
-    name = Pad.name_by_ref(ref)
+  def handle_pad_added(Pad.ref(name, _ref) = pad, ctx, state) do
+    assert_pad_count(name, ctx)
 
     spec =
       case name do
@@ -84,7 +85,20 @@ defmodule Membrane.Kino.Input.Bin.Source do
           |> bin_output(pad)
       end
 
-    state = put_in(state.tracks[pad], Track)
     {[spec: spec], state}
+  end
+
+  defp assert_pad_count(name, ctx) do
+    count =
+      ctx.pads
+      |> Map.keys()
+      |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
+      |> length()
+
+    if count > 1 do
+      raise "Pad #{name} for #{__MODULE__} already exists."
+    end
+
+    :ok
   end
 end

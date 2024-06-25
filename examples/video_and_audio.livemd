@@ -25,10 +25,11 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.H264.Parser, as: H264_Parser
+alias Membrane.H264
 
 alias Membrane.{
   AAC,
+  H264,
   RCPipeline
 }
 
@@ -39,7 +40,7 @@ kino = Kino.Player.new(video: true, audio: true)
 
 structure = [
   child({:file_input, :h264}, %File.Source{location: video_filepath})
-  |> child({:parser, :h264}, %H264_Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
+  |> child({:parser, :h264}, %H264.Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
   |> via_in(:video)
   |> get_child(:video_player),
   child({:file_input, :aac}, %File.Source{location: audio_filepath})
