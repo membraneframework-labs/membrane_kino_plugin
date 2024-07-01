@@ -3,6 +3,7 @@
   justify-content: center;
 }
 
+
 /* .frame-container {
   display: flex;
   width: 50%;
@@ -41,28 +42,16 @@
   color: #666;
 }
 
-#record-button .recording {
-  background-color: #ff5252;
-  color: #fff;
-}
-
-#record-button .recording .ri-mic-line .ri-camera-line {
+#record-button .ri-mic-line .ri-camera-line {
   display: none;
 }
-
-#record-button .recording::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  background-color: #fff;
-  border-radius: 50%;
-  animation: pulse 1s infinite;
+#reload-info-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  position: relative;
 }
-
 @keyframes pulse {
   0% {
     transform: translate(-50%, -50%) scale(0.5);

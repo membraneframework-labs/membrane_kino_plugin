@@ -60,10 +60,11 @@ defmodule Membrane.Kino.Input do
     video
     |> Map.put_new(:desired_width, 1920)
     |> Map.put_new(:desired_height, 1080)
+    |> Map.put_new(:desired_framerate, 30)
   end
 
   defp sanitize_video_parameters(true = _video) do
-    %{desired_width: 1920, desired_height: 1080}
+    %{desired_width: 1920, desired_height: 1080, desired_framerate: 30}
   end
 
   defp sanitize_video_parameters(_video), do: false

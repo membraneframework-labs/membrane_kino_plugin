@@ -12,6 +12,8 @@ video {
   max-width: 100%;
   border: 1px solid #333;
   margin: 0 auto;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
 }
 
 .video-mirror {
