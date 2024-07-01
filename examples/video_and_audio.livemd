@@ -2,19 +2,19 @@
 
 ```elixir
 File.cd(__DIR__)
-Logger.configure(level: :error)
+Logger.configure(level: :warning)
 
 Mix.install([
-  {:membrane_core, "~> 0.11.2"},
+  {:membrane_core, "~> 1.0"},
   {:membrane_kino_plugin, path: ".."},
-  {:membrane_file_plugin, "~> 0.13.0"},
-  {:membrane_mp4_plugin, "~> 0.19.0"},
-  {:membrane_h264_ffmpeg_plugin, "~> 0.25.2"},
-  {:membrane_aac_plugin, "~> 0.13.0"}
+  {:membrane_file_plugin, "~> 0.17.0"},
+  {:membrane_mp4_plugin, "~> 0.35.0"},
+  {:membrane_aac_plugin, "~> 0.18.1"},
+  {:membrane_h26x_plugin, "~> 0.10.2"}
 ])
 ```
 
-## Section
+## Pipeline definition
 
 ```elixir
 import Membrane.ChildrenSpec
@@ -25,9 +25,13 @@ alias Membrane.{
   Kino
 }
 
-alias Membrane.H264.FFmpeg.Parser, as: H264_Parser
-alias Membrane.AAC
-alias Membrane.RemoteControlled, as: RC
+alias Membrane.H264
+
+alias Membrane.{
+  AAC,
+  H264,
+  RCPipeline
+}
 
 video_filepath = "./res/input_baseline.h264"
 audio_filepath = "./res/input.aac"
@@ -36,7 +40,7 @@ kino = Kino.Player.new(video: true, audio: true)
 
 structure = [
   child({:file_input, :h264}, %File.Source{location: video_filepath})
-  |> child({:parser, :h264}, %H264_Parser{framerate: {60, 1}})
+  |> child({:parser, :h264}, %H264.Parser{generate_best_effort_timestamps: %{framerate: {60, 1}}})
   |> via_in(:video)
   |> get_child(:video_player),
   child({:file_input, :aac}, %File.Source{location: audio_filepath})
@@ -49,8 +53,10 @@ structure = [
 :ok
 ```
 
+## Playing pipeline
+
 ```elixir
-pipeline = RC.Pipeline.start!()
-RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: structure)
 kino
 ```

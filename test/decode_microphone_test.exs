@@ -1,17 +1,17 @@
 defmodule Membrane.DecodeMicrophoneTest do
   use ExUnit.Case, async: true
+
+  import Membrane.ChildrenSpec
   import Membrane.Testing.Assertions
 
   require Logger
 
   alias Membrane.Testing.Pipeline
 
-  import Membrane.ChildrenSpec
-
   alias Membrane.{
-    Opus,
     AAC,
-    KinoTest
+    KinoTest,
+    Opus
   }
 
   setup _ctx do
