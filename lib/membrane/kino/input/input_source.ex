@@ -25,12 +25,12 @@ defmodule Membrane.Kino.Input.Source do
               ]
 
   def_output_pad :video,
-    accepted_format: @video_stream_format,
+    accepted_format: %RemoteStream{content_format: :H264, type: :bytestream},
     availability: :on_request,
     flow_control: :push
 
   def_output_pad :audio,
-    accepted_format: @audio_stream_format,
+    accepted_format: %RemoteStream{content_format: :WEBM, type: :bytestream},
     availability: :on_request,
     flow_control: :push
 
@@ -119,7 +119,7 @@ defmodule Membrane.Kino.Input.Source do
 
   @impl true
   def handle_pad_added(Pad.ref(name, _ref), ctx, state) do
-    assert_pad_count(name, ctx)
+    assert_pad_count!(name, ctx)
 
     if not Enum.member?(state.mode, name) do
       raise "Pad #{name} not allowed for #{__MODULE__}."
@@ -134,12 +134,11 @@ defmodule Membrane.Kino.Input.Source do
     |> Enum.find(fn pad_ref -> Pad.name_by_ref(pad_ref) == target end)
   end
 
-  defp assert_pad_count(name, ctx) do
+  defp assert_pad_count!(name, ctx) do
     count =
       ctx.pads
       |> Map.keys()
-      |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
-      |> length()
+      |> Enum.count(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
 
     if count > 1 do
       raise "Pad #{name} for #{__MODULE__} already exists."

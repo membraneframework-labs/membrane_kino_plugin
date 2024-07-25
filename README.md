@@ -8,7 +8,7 @@ Package required to play media in the Livebook, directly from the Membrane pipel
 
 Supports audio and video input and playback.
 
-Currently video capture works only in Chrome, audio capture in Chrome and Firefox.
+Currently video capture works only in Chrome, audio capture works in Chrome and Firefox.
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 

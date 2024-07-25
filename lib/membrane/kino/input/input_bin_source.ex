@@ -68,7 +68,7 @@ defmodule Membrane.Kino.Input.Bin.Source do
 
   @impl true
   def handle_pad_added(Pad.ref(name, _ref) = pad, ctx, state) do
-    assert_pad_count(name, ctx)
+    assert_pad_count!(name, ctx)
 
     spec =
       case name do
@@ -88,12 +88,11 @@ defmodule Membrane.Kino.Input.Bin.Source do
     {[spec: spec], state}
   end
 
-  defp assert_pad_count(name, ctx) do
+  defp assert_pad_count!(name, ctx) do
     count =
       ctx.pads
       |> Map.keys()
-      |> Enum.filter(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
-      |> length()
+      |> Enum.count(fn pad_ref -> Pad.name_by_ref(pad_ref) == name end)
 
     if count > 1 do
       raise "Pad #{name} for #{__MODULE__} already exists."
