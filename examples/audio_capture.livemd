@@ -2,28 +2,21 @@
 
 ```elixir
 File.cd(__DIR__)
-Logger.configure(level: :error)
+Logger.configure(level: :warning)
 
 Mix.install([
-  {:membrane_core, "~> 0.11.2"},
-  {:membrane_file_plugin, "~> 0.13.0"},
+  {:membrane_core, "~> 1.0"},
   {:membrane_kino_plugin, path: ".."},
-  {:membrane_opus_plugin, "~> 0.16.0"},
-  {:membrane_aac_fdk_plugin, "~> 0.14.0"},
-  {:membrane_aac_plugin, "~> 0.13.0"},
-  {:membrane_wav_plugin, "~> 0.8.0"},
-  {:membrane_generator_plugin, "~> 0.8.0"},
-  {:membrane_raw_audio_format, "~> 0.10.0"},
-  {:membrane_matroska_plugin, "~> 0.2.1"},
-  {:membrane_portaudio_plugin, "~> 0.14.3"},
-  {:membrane_ffmpeg_swresample_plugin, "~> 0.16.1"}
+  {:membrane_matroska_plugin, "~> 0.5.1"},
+  {:membrane_opus_plugin, "~> 0.20.2"},
+  {:membrane_aac_fdk_plugin, "~> 0.18.9"}
 ])
 ```
 
-## Section
+## Pipeline definition
 
 ```elixir
-alias Membrane.RemoteControlled, as: RC
+alias Membrane.RCPipeline
 import Membrane.ChildrenSpec
 
 alias Membrane.{
@@ -33,9 +26,7 @@ alias Membrane.{
   Time,
   RawAudio
 }
-```
 
-```elixir
 kino_input =
   Membrane.Kino.Input.new(
     audio: true,
@@ -49,19 +40,21 @@ kino_player =
   )
 
 play_kino_audio =
-  child(:input, %Membrane.Kino.Input.Source{kino: kino_input})
-  |> child(:from_opus, Opus.Decoder)
-  |> child(:to_aac, AAC.FDK.Encoder)
+  child(:input, %Membrane.Kino.Input.Bin.Source{kino: kino_input})
+  |> via_out(:audio)
+  |> child(:opus_decoder, Opus.Decoder)
+  |> child(:aac_encoder, AAC.FDK.Encoder)
   |> via_in(:audio)
   |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player})
 
 :ok
 ```
 
+## Playing pipeline
+
 ```elixir
-structure = play_kino_audio
-pipeline = RC.Pipeline.start!()
-RC.Pipeline.exec_actions(pipeline, spec: structure, playback: :playing)
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: play_kino_audio)
 
 Kino.render(kino_input)
 kino_player

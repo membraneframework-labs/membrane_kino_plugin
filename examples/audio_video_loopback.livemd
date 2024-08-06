@@ -1,0 +1,69 @@
+# Audio and video loopback
+
+```elixir
+File.cd(__DIR__)
+Logger.configure(level: :warning)
+
+Mix.install([
+  {:membrane_core, "~> 1.0"},
+  {:membrane_kino_plugin, path: ".."},
+  {:membrane_matroska_plugin, "~> 0.5.1"},
+  {:membrane_opus_plugin, "~> 0.20.2"},
+  {:membrane_aac_fdk_plugin, "~> 0.18.9"}
+])
+```
+
+## Pipeline definition and playback
+
+Audio and video input is requested from web browser, fed into elixir pipeline and back into kino player.
+
+```elixir
+import Membrane.ChildrenSpec
+
+alias Membrane.{
+  Time,
+  Opus,
+  AAC
+}
+
+alias Membrane.RCPipeline
+
+width = 1920
+height = 1080
+
+kino_input =
+  Membrane.Kino.Input.new(
+    audio: true,
+    video: true,
+    flush_time: Time.milliseconds(10)
+  )
+
+kino_player =
+  Membrane.Kino.Player.new(
+    audio: true,
+    video: true,
+    mirror: true,
+    flush_time: Time.milliseconds(10)
+  )
+
+loopback = [
+  # video
+  child(:source, %Membrane.Kino.Input.Bin.Source{kino: kino_input})
+  |> via_out(:video)
+  |> via_in(:video)
+  |> child(:player, %Membrane.Kino.Player.Sink{kino: kino_player}),
+  # audio
+  get_child(:source)
+  |> via_out(:audio)
+  |> child(:opus_decoder, Opus.Decoder)
+  |> child(:aac_encoder, AAC.FDK.Encoder)
+  |> via_in(:audio)
+  |> get_child(:player)
+]
+
+pipeline = RCPipeline.start!()
+RCPipeline.exec_actions(pipeline, spec: loopback)
+
+Kino.render(kino_input)
+kino_player
+```

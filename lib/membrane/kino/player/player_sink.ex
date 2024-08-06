@@ -7,10 +7,8 @@ defmodule Membrane.Kino.Player.Sink do
 
   ## Example
   ``` elixir
-  # upper cell
   kino = Membrane.Kino.Player.new(video: true)
 
-  # lower cell
   import Membrane.ChildrenSpec
 
   alias Membrane.{
@@ -18,8 +16,9 @@ defmodule Membrane.Kino.Player.Sink do
     RawVideo,
     Kino
   }
+
   alias Membrane.H264.FFmpeg.Parser
-  alias Membrane.RemoteControlled, as: RC
+  alias Membrane.RCPipeline
 
   input_filepath = "path/to/file.h264"
 
@@ -29,11 +28,17 @@ defmodule Membrane.Kino.Player.Sink do
     |> via_in(:video)
     |> child(:video_player, %Kino.Player.Sink{kino: kino})
 
-  pipeline = RC.Pipeline.start!()
-  RC.Pipeline.exec_actions(pipeline, spec: structure)
-  RC.Pipeline.exec_actions(pipeline, playback: :playing)
+  pipeline = RCPipeline.start!()
+  RCPipeline.exec_actions(pipeline, spec: structure)
+  kino
   ```
   """
+
+  use Membrane.Sink
+  require Membrane.Logger
+
+  alias Membrane.Kino.Player, as: KinoPlayer
+  alias Membrane.{AAC, Buffer, H264, Time}
 
   defmodule Track do
     @moduledoc false
@@ -68,17 +73,6 @@ defmodule Membrane.Kino.Player.Sink do
       added
     end
   end
-
-  defmodule KinoSourceAlreadyOccupiedError do
-    defexception [:message]
-  end
-
-  use Membrane.Sink
-
-  require Membrane.Logger
-
-  alias Membrane.Kino.Player, as: KinoPlayer
-  alias Membrane.{AAC, Buffer, H264, Time}
 
   def_options kino: [
                 spec: KinoPlayer.t(),
@@ -154,11 +148,11 @@ defmodule Membrane.Kino.Player.Sink do
     end
   end
 
-  defp get_framerate(stream_format = %H264{}) do
+  defp get_framerate(%H264{} = stream_format) do
     stream_format.framerate
   end
 
-  defp get_framerate(stream_format = %AAC{}) do
+  defp get_framerate(%AAC{} = stream_format) do
     num = stream_format.sample_rate
     den = stream_format.samples_per_frame
     {num, den}

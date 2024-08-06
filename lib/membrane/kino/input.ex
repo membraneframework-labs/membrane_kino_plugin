@@ -1,6 +1,6 @@
 defmodule Membrane.Kino.Input do
   @moduledoc """
-  Kino component capable of capturing audio from the microphone (and camera video in the future).
+  Kino component capable of capturing audio from the microphone or video from the camera.
 
   Element provides synchronous API for sending frames to the different processes:
   ```elixir
@@ -22,15 +22,14 @@ defmodule Membrane.Kino.Input do
 
   ```
   """
+  use Kino.JS, assets_path: "lib/assets/input"
+  use Kino.JS.Live
+
+  alias Membrane.Time
 
   defmodule InputError do
     defexception [:message]
   end
-
-  use Kino.JS, assets_path: "lib/assets/audio_input"
-  use Kino.JS.Live
-
-  alias Membrane.Time
 
   @type t() :: Kino.JS.Live.t()
 
@@ -38,23 +37,37 @@ defmodule Membrane.Kino.Input do
   Creates a new Membrane.Kino.Input component. Returns a handle to the input.
   Should be invoked at the end of the cell or explicitly rendered.
   """
-  @spec new(audio: boolean(), flush_time: Time.t()) :: t()
+  @spec new(audio: boolean(), video: boolean() | %{}, flush_time: Time.t()) :: t()
   def new(opts) do
     opts = Keyword.validate!(opts, video: false, audio: false, flush_time: Time.milliseconds(1))
 
-    if not (opts[:video] or opts[:audio]) do
+    if opts[:video] == false and opts[:audio] == false do
       raise ArgumentError, "At least one of :video or :audio should be true"
     end
 
-    type = Keyword.take(opts, [:video, :audio]) |> Map.new()
-
     info = %{
-      type: type,
+      type: %{
+        video: sanitize_video_parameters(opts[:video]),
+        audio: opts[:audio]
+      },
       flush_time: Time.as_milliseconds(opts[:flush_time], :round)
     }
 
     Kino.JS.Live.new(__MODULE__, info)
   end
+
+  defp sanitize_video_parameters(%{} = video) do
+    video
+    |> Map.put_new(:desired_width, 1920)
+    |> Map.put_new(:desired_height, 1080)
+    |> Map.put_new(:desired_framerate, 30)
+  end
+
+  defp sanitize_video_parameters(true = _video) do
+    %{desired_width: 1920, desired_height: 1080, desired_framerate: 30}
+  end
+
+  defp sanitize_video_parameters(_video), do: false
 
   @doc """
   Registers a process to receive audio frames from the input. Process will receive
@@ -91,6 +104,32 @@ defmodule Membrane.Kino.Input do
   def handle_event("audio_frame", {:binary, info, binary}, ctx) do
     if ctx.assigns.client do
       send(ctx.assigns.client, {:audio_frame, info, binary})
+    end
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("framerate", framerate, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:framerate, framerate})
+    end
+
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("video_frame", {:binary, info, binary}, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:video_frame, info, binary})
+    end
+
+    {:noreply, ctx}
+  end
+
+  def handle_event("audio_video_frame", {:binary, info, binary}, ctx) do
+    if ctx.assigns.client do
+      send(ctx.assigns.client, {:audio_video_frame, info, binary})
     end
 
     {:noreply, ctx}
@@ -134,6 +173,11 @@ defmodule Membrane.Kino.Input do
       {:error, :not_registered} ->
         {:reply, {:error, :not_registered}, ctx}
     end
+  end
+
+  @impl true
+  def handle_call(:get_type, _sender, ctx) do
+    {:reply, ctx.assigns.info.type, ctx}
   end
 
   defp unregister_listener(from, ctx) do

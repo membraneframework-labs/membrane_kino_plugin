@@ -6,7 +6,9 @@
 
 Package required to play media in the Livebook, directly from the Membrane pipeline.
 
-Supports playing audio and video streams.
+Supports audio and video input and playback.
+
+Currently video capture works only in Chrome, audio capture works in Chrome and Firefox.
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 
@@ -17,7 +19,7 @@ The package can be installed by adding `membrane_kino_plugin` to your list of de
 ```elixir
 def deps do
   [
-    {:membrane_kino_plugin, github: "membraneframework-labs/membrane_kino_plugin", tag: "v0.3.2"}
+    {:membrane_kino_plugin, github: "membraneframework-labs/membrane_kino_plugin", tag: "v0.4.0"}
   ]
 end
 ```
